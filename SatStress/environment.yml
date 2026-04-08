@@ -1,0 +1,16 @@
+name: satstress
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy
+  - scipy
+  - matplotlib
+  - wxpython
+  - basemap
+  - gdal
+  - pygraphviz
+  - netcdf4
+  - gfortran
+  - pip
+prefix: /opt/miniconda3/envs/europa

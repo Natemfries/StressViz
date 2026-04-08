@@ -1,0 +1,21 @@
+# macOS cruft
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Envs & build
+.env/
+.venv/
+venv/
+build/
+dist/
+
+# Local data / outputs
+data/
+*.nc
+*.h5
+*.png
+
+# External deps you don't want in repo
