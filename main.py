@@ -102,10 +102,16 @@ class StressVizFrame(wx.Frame):
                 # If this is heavy for some users, thread it in the future and CallAfter the UI update.
                 self.control.load_encounters_df(df)
                 try:
-                    self.control.add_plume_observations()
+                    self.control_panel.add_plume_observations()
                 except Exception as e:
                     import traceback
                     print(f"[StressViz] add_plume_observations failed: {e}")
+                    traceback.print_exc()
+                try:
+                    self.control_panel.run_default_startup()
+                except Exception as e:
+                    import traceback
+                    print(f"[StressViz] default startup failed: {e}")
                     traceback.print_exc()
                     
                 self.SetStatusText("Encounters loaded")

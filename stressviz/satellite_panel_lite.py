@@ -527,10 +527,14 @@ class SatellitePanelLite(wx.Panel):
             "nsr_years": EUROPA_DEFAULT_DTO["nsr_years"],
             "layers": [dict(L) for L in EUROPA_DEFAULT_DTO.get("layers", [])],
         }
+
         self._apply_dto_to_ui(dto)
         self.satellite = dto
         self._notify()
 
+        parent = self.GetParent()
+        if parent is not None and hasattr(parent, "on_compute_love"):
+            parent.on_compute_love(None)
 
     def _mirror_satellite_into_form(self, sat):
         """

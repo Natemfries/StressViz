@@ -278,6 +278,8 @@ class AnalysisControlPanel(ScrolledPanel):
         self.Layout()
         self.FitInside()
         self.Bind(wx.EVT_SIZE, self._on_resize)
+        self._startup_done = False
+        wx.CallAfter(self.run_default_startup)
 
     # ============================== Layout ========================================
     def _on_resize(self, evt):
@@ -1327,194 +1329,8 @@ class AnalysisControlPanel(ScrolledPanel):
     def _resolve_encounter(self, enc_id: str):
         return getattr(self, "encounters_by_id", {}).get(enc_id)
 
-    '''
-    def _resolve_true_anomaly(self, utc_iso: str) -> float | None:
-        """
-        Resolve Europa true anomaly ν (deg) at a UTC time using JPL Horizons.
-        Stores diagnostics in self._last_horizons_diag.
-        """
-        self._last_horizons_diag = {
-            "ok": False,
-            "error": None,
-            "stage": None,
-            "utc_iso": utc_iso,
-            "jd_tdb": None,
-            "target_id": None,
-            "center_id": None,
-            "colnames": None,
-            "value": None,
-        }
-
-        # Defaults that tend to work for Europa around Jupiter barycenter.
-        # Override by setting self.horizons_target_id / self.horizons_center_id if you want.
-        target_id = getattr(self, "horizons_target_id", "502")      # Europa (major body id)
-        center_id = getattr(self, "horizons_center_id", "500@5")    # Jupiter system barycenter
-
-        self._last_horizons_diag["target_id"] = target_id
-        self._last_horizons_diag["center_id"] = center_id
-
-        try:
-            from astropy.time import Time
-            from astroquery.jplhorizons import Horizons
-        except Exception as e:
-            self._last_horizons_diag["error"] = f"Missing deps (astropy/astroquery): {e}"
-            self._last_horizons_diag["stage"] = "import"
-            return None
-
-        # Parse UTC -> JD(TDB)
-        try:
-            t_utc = self._utc_string_to_astropy_time(str(utc_iso))
-            jd_tdb = float(t_utc.tdb.jd)
-            self._last_horizons_diag["jd_tdb"] = jd_tdb
-        except Exception as e:
-            self._last_horizons_diag["error"] = f"Bad UTC '{utc_iso}': {e}"
-            self._last_horizons_diag["stage"] = "time_parse"
-            return None
-
-        # Horizons query helper
-        def _extract_nu_from_table(tab) -> float | None:
-            try:
-                colnames = list(getattr(tab, "colnames", []) or [])
-                self._last_horizons_diag["colnames"] = colnames
-            except Exception:
-                pass
-
-            # Try common true anomaly column names
-            for key in ("TA", "true_anom", "true_anomaly", "TruAnom", "tru_anom"):
-                if hasattr(tab, "colnames") and key in tab.colnames:
-                    try:
-                        return float(tab[key][0])
-                    except Exception:
-                        pass
-            return None
-
-        # 1) Try elements() (sometimes works depending on target/center)
-        try:
-            obj = Horizons(id=target_id, id_type=None, location=center_id, epochs=[jd_tdb])
-            tab = obj.elements()
-            self._last_horizons_diag["stage"] = "elements"
-            nu = _extract_nu_from_table(tab)
-            if nu is not None:
-                nu = float(nu) % 360.0
-                self._last_horizons_diag.update(ok=True, value=nu)
-                return nu
-        except Exception as e:
-            self._last_horizons_diag["error"] = f"Horizons elements() failed: {e}"
-            self._last_horizons_diag["stage"] = "elements_error"
-
-        # 2) Try ephemerides() (often more reliable for major bodies)
-        try:
-            obj = Horizons(id=target_id, id_type=None, location=center_id, epochs=[jd_tdb])
-            tab = obj.ephemerides()
-            self._last_horizons_diag["stage"] = "ephemerides"
-            nu = _extract_nu_from_table(tab)
-            if nu is not None:
-                nu = float(nu) % 360.0
-                self._last_horizons_diag.update(ok=True, value=nu)
-                return nu
-
-            # If we got here, Horizons returned successfully but didn't include TA.
-            self._last_horizons_diag["error"] = (
-                "Horizons returned ephemerides but no true anomaly column was found. "
-                f"Columns: {getattr(tab, 'colnames', None)}"
-            )
-            self._last_horizons_diag["stage"] = "ephemerides_no_TA"
-            return None
-
-        except Exception as e:
-            self._last_horizons_diag["error"] = f"Horizons ephemerides() failed: {e}"
-            self._last_horizons_diag["stage"] = "ephemerides_error"
-            return None
-    '''
-
-
     def get_last_horizons_diag(self):
         return getattr(self, "_last_horizons_diag", None)
-    '''
-    def _resolve_true_anomaly_from_et(self, et_sec: float) -> Optional[float]:
-        if not hasattr(self, "_et_list") or not self._et_list:
-            return None
-        import bisect
-        et = float(et_sec)
-        i = bisect.bisect_left(self._et_list, et)
-        cands = []
-        if i > 0: cands.append(self._et_list[i-1])
-        if i < len(self._et_list): cands.append(self._et_list[i])
-        if not cands: return None
-        best = min(cands, key=lambda t: abs(t - et))
-        return self._nu_by_et.get(best)
-
-    def _resolve_nu_from_time(self, time_val, *, is_et: bool, allow_fallback: bool = True):
-        """
-        Resolve ν (true anomaly, deg). Prefer Horizons; fallback to nearest encounter ν.
-
-        IMPORTANT: Forces center to Jupiter planet (@599) for consistency with encounter geometry.
-        """
-        from astropy.time import Time
-
-        self._last_horizons_diag = {"ok": False, "error": None, "fallback": None}
-
-        target_id = getattr(self, "horizons_target_id", _HORIZONS_TARGET)
-
-        # Force Jupiter *planet* center for consistency (avoid @5 barycenter ambiguity)
-        center_id = "@599"
-
-        # --- parse/convert time to jd_tdb and et_sec ---
-        try:
-            if is_et:
-                et_sec = float(time_val)
-                jd_tdb = self._etsec_to_jd_tdb(et_sec)
-            else:
-                t_utc = self._utc_string_to_astropy_time(str(time_val))
-                jd_tdb = float(t_utc.tdb.jd)
-                et_sec = float((t_utc.tdb - Time("J2000", scale="tdb")).to_value("s"))
-        except Exception as e:
-            self._last_horizons_diag.update(error=f"time parse/convert failed: {e}")
-            return None
-
-        self._last_horizons_diag.update(
-            is_et=bool(is_et),
-            et_sec=et_sec,
-            jd_tdb=jd_tdb,
-            target_id=str(target_id),
-            center_id=str(center_id),
-        )
-
-        # --- 1) Horizons elements() TA ---
-        try:
-            from astroquery.jplhorizons import Horizons
-            obj = Horizons(id=target_id, id_type="id", location=center_id, epochs=[jd_tdb])
-            tab = obj.elements()
-
-            nu = None
-            for key in ("TA", "true_anom", "true_anomaly"):
-                if key in tab.colnames:
-                    nu = float(tab[key][0])
-                    break
-
-            if nu is not None:
-                nu = float(nu) % 360.0
-                self._last_horizons_diag.update(ok=True, nu_deg=nu, src="horizons_elements_TA")
-                return nu
-
-            self._last_horizons_diag.update(
-                error=f"No true anomaly column in Horizons return. colnames={list(tab.colnames)}",
-                src="horizons_elements",
-            )
-
-        except Exception as e:
-            self._last_horizons_diag.update(error=f"Horizons request failed: {e}", src="horizons_elements")
-
-        # --- 2) Fallback: nearest encounter ν (by ET) ---
-        if allow_fallback:
-            nu_fb = self._resolve_true_anomaly_from_et(et_sec)
-            if nu_fb is not None:
-                nu_fb = float(nu_fb) % 360.0
-                self._last_horizons_diag.update(ok=True, fallback="encounter_nearest", nu_deg=nu_fb, src="fallback_encounter")
-                return nu_fb
-
-        return None
-    '''
 
     # --- canonical time conversions ---
     def _utc_to_jd_tdb(self, utc_iso: str) -> float:
@@ -1775,6 +1591,41 @@ class AnalysisControlPanel(ScrolledPanel):
                 frame.Destroy()
             except Exception:
                 pass
+
+    def run_default_startup(self):
+        """
+        Initialize the app into a usable default state:
+        - apply Europa defaults
+        - compute Love numbers
+        - select a default encounter
+        - load that encounter into PointStressPanel
+        - compute stresses
+        - open the map window
+        """
+        # 1) Europa defaults (this now also triggers Love number computation)
+        self.sat_panel._on_click_europa_defaults(None)
+
+        # 2) Select a default encounter
+        cmb = getattr(self.point_panel, "cmb_enc", None)
+        if cmb is not None and cmb.GetCount() > 0:
+            picked = False
+            for i in range(cmb.GetCount()):
+                txt = cmb.GetString(i).strip()
+                if txt.lower() in ("clipper-e1", "e1", "clipper e1"):
+                    cmb.SetSelection(i)
+                    picked = True
+                    break
+            if not picked:
+                cmb.SetSelection(0)
+
+        # 3) Load encounter into point-panel fields
+        self.point_panel._on_load_selected_encounter(None)
+
+        # 4) Compute point stress / resolve state needed by map
+        self.point_panel._on_compute_clicked(None)
+
+        # 5) Open map
+        self.on_open_map(None)
 
 
 
