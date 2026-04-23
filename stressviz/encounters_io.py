@@ -95,7 +95,7 @@ def build_plume_rows_from_txt(txt_path: str) -> list[dict]:
 
     This does NOT query Horizons/SPICE. It normalizes input and creates rows.
 
-    NEW: propagates any precomputed phase columns if present in the TSV:
+    Propagates any precomputed phase columns if present in the TSV:
       - Mid (ISO)
       - true_anom_deg
       - mean_anom_deg
@@ -103,6 +103,7 @@ def build_plume_rows_from_txt(txt_path: str) -> list[dict]:
       - phase_src
       - period_hours (optional)
       - detection
+      - encounter (optional; if present/non-empty, used in encounter_id)
     """
     import re
     import pandas as pd
@@ -124,25 +125,30 @@ def build_plume_rows_from_txt(txt_path: str) -> list[dict]:
 
     df = pd.read_csv(txt_path, sep="\t", dtype=str).fillna("")
 
+    # Clean header names in case the txt export added spaces/BOM/case differences
+    df.columns = [str(c).replace("\ufeff", "").strip() for c in df.columns]
+
     # Normalize the canonical columns we rely on
     df = df.rename(columns={
         "Start (ISO)": "utc_iso",
         "Observer": "observer",
         "Total Exposure (s)": "exposure_s",
+        "Mid (ISO)": "mid_iso",
     })
 
     for col in ("utc_iso", "observer"):
         if col not in df.columns:
             raise ValueError(f"Missing required column '{col}' in {txt_path}")
 
-    # Optional columns (only present after precompute)
-    has_mid = "Mid (ISO)" in df.columns
+    # Optional columns
+    has_mid = "mid_iso" in df.columns
     has_ta  = "true_anom_deg" in df.columns
     has_ma  = "mean_anom_deg" in df.columns
     has_ecc = "eccentricity" in df.columns
     has_src = "phase_src" in df.columns
     has_P   = "period_hours" in df.columns
     has_det = "detection" in df.columns
+    has_enc = "encounter" in df.columns
 
     rows: list[dict] = []
 
@@ -154,27 +160,43 @@ def build_plume_rows_from_txt(txt_path: str) -> list[dict]:
         exposure_s = _to_float_or_none(r.get("exposure_s", ""))
 
         # Pull precomputed values if present
-        mid_iso = _to_str_or_none(r.get("Mid (ISO)", "")) if has_mid else None
+        mid_iso = _to_str_or_none(r.get("mid_iso", "")) if has_mid else None
         ta_deg  = _to_float_or_none(r.get("true_anom_deg", "")) if has_ta else None
         ma_deg  = _to_float_or_none(r.get("mean_anom_deg", "")) if has_ma else None
         ecc     = _to_float_or_none(r.get("eccentricity", "")) if has_ecc else None
         src     = _to_str_or_none(r.get("phase_src", "")) if has_src else None
         P_h     = _to_float_or_none(r.get("period_hours", "")) if has_P else None
         det     = _to_str_or_none(r.get("detection", "")) if has_det else None
+        encounter = _to_str_or_none(r.get("encounter", "")) if has_enc else None
 
         # Normalize detection flag for use in ID
-        det_norm = (det or "").strip().lower()
-        if det_norm == "y":
+        # Handles: y, n, y*, n*, Y, N, " y* ", "y *"
+        det_norm = (det or "").strip().lower().replace(" ", "")
+
+        if det_norm.startswith("y"):
             det_tag = "Y"
-        elif det_norm == "n":
+        elif det_norm.startswith("n"):
             det_tag = "N"
         else:
-            det_tag = "U"   # unknown / missing
+            det_tag = "U"
 
-        # Stable encounter_id: observer + start time + detection
-        safe_time = utc_iso.replace("-", "").replace(":", "").replace("T", "_").replace("Z", "Z")
+        if "*" in det_norm:
+            det_tag += "*"
+
         safe_obs = re.sub(r"[^A-Za-z0-9]+", "", observer)
-        enc_id = f"PLUME_{safe_obs}_{safe_time}_{det_tag}"
+
+        # If encounter column is present and non-empty, use observer + encounter
+        if encounter:
+            safe_enc = re.sub(r"[^A-Za-z0-9]+", "", encounter)
+            enc_id = f"PLUME_{safe_obs}_{safe_enc}_{det_tag}"
+        else:
+            safe_time = (
+                utc_iso.replace("-", "")
+                      .replace(":", "")
+                      .replace("T", "_")
+                      .replace("Z", "Z")
+            )
+            enc_id = f"PLUME_{safe_obs}_{safe_time}_{det_tag}"
 
         # Normalize anomalies to [0,360) if present
         if ta_deg is not None:
@@ -182,6 +204,7 @@ def build_plume_rows_from_txt(txt_path: str) -> list[dict]:
                 ta_deg = float(ta_deg) % 360.0
             except Exception:
                 ta_deg = None
+
         if ma_deg is not None:
             try:
                 ma_deg = float(ma_deg) % 360.0
@@ -196,6 +219,7 @@ def build_plume_rows_from_txt(txt_path: str) -> list[dict]:
             "utc_iso": utc_iso,
             "observer": observer,
             "exposure_s": exposure_s,
+            "encounter": encounter,
 
             # optional precomputed (if present in file)
             "mid_utc_iso": mid_iso,

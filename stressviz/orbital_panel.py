@@ -50,6 +50,12 @@ class OrbitalPositionPanel(wx.Panel):
         self.canvas = FigureCanvas(self, -1, self.figure)
         self.canvas.SetMinSize((220, 220))
         self.ax = self.figure.add_subplot(111, polar=True)
+        self.ax.set_aspect("equal", adjustable="box")
+        try:
+            self.ax.set_box_aspect(1)
+        except Exception:
+            pass
+        self.Bind(wx.EVT_SIZE, self._on_resize)
 
         # Polar styling: 0° at South, CCW increasing
         self.ax.set_theta_zero_location("S")
@@ -533,6 +539,14 @@ class OrbitalPositionPanel(wx.Panel):
             pass
 
         self._legend_obj = leg
+
+    def _on_resize(self, event):
+        event.Skip()
+        try:
+            self.figure.tight_layout()
+        except Exception:
+            pass
+        self.canvas.draw_idle()
 
 
     # ================= Encounter UI (optional) =================

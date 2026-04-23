@@ -223,7 +223,7 @@ class ScalarPlotPanel(wx.Panel):
         self.ax = self.fig.add_subplot(111)
         self.figure = self.fig
         self.canvas = FigureCanvas(left_panel, -1, self.fig)
-        self.canvas.SetMinSize((self.FromDIP(440), self.FromDIP(440)))
+        self.canvas.SetMinSize((self.FromDIP(300), self.FromDIP(300)))
 
         # Keep a comfortable axes rectangle (l, b, w, h) in fig fractions
         self._ax_rect = [0.10, 0.16, 0.72, 0.70]
@@ -239,7 +239,7 @@ class ScalarPlotPanel(wx.Panel):
         divider = make_axes_locatable(self.ax)
         self._cax = divider.append_axes("right", size=self._cbar_size, pad=self._cbar_pad)
 
-        left.Add(self.canvas, 3, wx.EXPAND)
+        left.Add(self.canvas, 1, wx.EXPAND)
         left.Add(self.toolbar, 0, wx.EXPAND)
 
         # ----- Keep a strict 2:1 x:y data ratio while staying interactive -----
@@ -339,8 +339,7 @@ class ScalarPlotPanel(wx.Panel):
         self.orb_panel = OrbitalPositionPanel(left_panel)
         self.orb_panel._use_side_legend = True
         ORBIT_H = self.FromDIP(250)
-        self.orb_panel.SetMinSize((self.FromDIP(360), ORBIT_H))
-        self.orb_panel.SetMaxSize((-1, ORBIT_H))
+        self.orb_panel.SetMinSize((self.FromDIP(190), self.FromDIP(190)))
 
         orbit_row.Add(self.orb_panel, 3, wx.EXPAND | wx.ALL, 4)
 
@@ -371,7 +370,7 @@ class ScalarPlotPanel(wx.Panel):
         orbit_row.Add(self.orbit_legend_panel, 0, wx.EXPAND | wx.TOP | wx.RIGHT | wx.BOTTOM, 4)
 
         self._orbit_sizer.Add(orbit_row, 1, wx.EXPAND | wx.ALL, 0)
-        left.Add(self._orbit_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+        left.Add(self._orbit_sizer, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
 
         # Add left column to main
         main.Add(left_panel, 3, wx.EXPAND | wx.ALL, 4)
@@ -707,6 +706,7 @@ class ScalarPlotPanel(wx.Panel):
             meta["encounter_id"] = enc_id
             meta["utc_iso"] = _clean(meta.get("utc_iso") or meta.get("utc"))
             meta["observer"] = _clean(meta.get("observer")) or "UNKNOWN"
+            meta["encounter"] = _clean(meta.get("encounter"))
 
             # Normalize phase values (key part!)
             nu = _to_float(meta.get("true_anom_deg") or meta.get("nu_deg"))
@@ -3049,18 +3049,26 @@ class ScalarPlotPanel(wx.Panel):
         for enc_id, meta in plume_meta.items():
             obs = meta.get("observer") or "UNKNOWN"
             utc = meta.get("utc_iso") or meta.get("utc") or ""
+            encounter = meta.get("encounter") or ""
 
             disp_id = enc_id.replace("PLUME_", "", 1) if str(enc_id).startswith("PLUME_") else str(enc_id)
 
-            det = str(meta.get("detection") or "").strip().upper()
-            if det == "Y":
+            det = str(meta.get("detection") or "").strip().lower()
+            if det == "y":
                 det_label = "Y"
-            elif det == "N":
+            elif det == "n":
                 det_label = "N"
+            elif det == "n*":
+                det_label = "*N"
+            elif det == "y*":
+                det_label = "*Y"
             else:
                 det_label = "U"
 
-            label = f"{obs} {utc} [{det_label}]".strip() or disp_id
+            if str(encounter).strip():
+                label = f"{obs}-{encounter} [{det_label}]".strip() or disp_id
+            else:
+                label = f"{obs} {utc} [{det_label}]".strip() or disp_id
 
             M = meta.get("mean_anom_deg")
             if M in ("", None):
@@ -3082,6 +3090,7 @@ class ScalarPlotPanel(wx.Panel):
 
                 "utc_iso": utc,
                 "observer": obs,
+                "encounter": encounter,
                 "exposure_s": meta.get("exposure_s"),
 
                 "mean_anom_deg": M,

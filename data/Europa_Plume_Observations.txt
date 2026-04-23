@@ -1,60 +1,66 @@
-Detection ?	Observer	Start Date (mm/dd/yyyy)	Start Time (UTC)	Total Exposure (s)	Min true anomaly 	Max true anomaly	Comment on methods	Reference	Unnamed: 9	Unnamed: 10	Start (ISO)	Mid (ISO)	true_anom_deg	mean_anom_deg	eccentricity	phase_src
-No	HST	10/5/99	8:39:00	9360	343	13	Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2014, 2016			1999-10-05T08:39:00	1999-10-05T09:57:00Z	351.013458	351.185437	0.00967698461199	horizons:nu->M
-No	HST	11/8/12	20:41:00	10980	289	318	Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2014, 2016			2012-11-08T20:41:00	2012-11-08T22:12:30Z	294.947855	295.947639	0.0096521471838	horizons:nu->M
-Yes	HST	12/30/12	18:49:00	9840	185	218	Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2014, 2016			2012-12-30T18:49:00	2012-12-30T20:11:00Z	197.500343	197.840595	0.00980495488197	horizons:nu->M
-No	HST	12/22/13	6:58:00	1473.88	238.91		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2013-12-22T06:58:00	2013-12-22T07:10:16.940000Z	237.798645	238.734412	0.00961358385076	horizons:nu->M
-No	HST	1/22/14	14:02:00	11004			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2014b, 2016			2014-01-22T14:02:00	2014-01-22T15:33:42Z	200.619983	201.006518	0.00951434373602	horizons:nu->M
-Yes	HST	1/26/14	18:05:00	2023.24	260.08		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2014-01-26T18:05:00	2014-01-26T18:21:51.620000Z	259.267128	260.364754	0.00973602871595	horizons:nu->M
-No	HST	2/2/14	8:19:00	11004			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2014b, 2016			2014-02-02T08:19:00	2014-02-02T09:50:42Z	216.706890	217.382215	0.00980164008019	horizons:nu->M
-No	HST	2/27/14	19:57:00	2507.19	296.56		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2014-02-27T19:57:00	2014-02-27T20:17:53.595000Z	296.085331	297.104716	0.00993730960233	horizons:nu->M
-Yes	HST	3/17/14	11:47:00	2389.45	296.83		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2014-03-17T11:47:00	2014-03-17T12:06:54.725000Z	296.205127	297.225818	0.00996047430779	horizons:nu->M
-No	HST	3/24/14	12:45:00	2232.8	295.03		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2014-03-24T12:45:00	2014-03-24T13:03:36.400000Z	294.277935	295.288208	0.00970070650945	horizons:nu->M
-Yes	HST	4/4/14	5:20:00	2200.41	310.31		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2014-04-04T05:20:00	2014-04-04T05:38:20.205000Z	309.592973	310.485306	0.0101544999653	horizons:nu->M
-No	HST	4/14/14	21:52:00	2119.05	316.94		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2014-04-14T21:52:00	2014-04-14T22:09:39.525000Z	316.106971	316.873435	0.00969803592795	horizons:nu->M
-No	HST	4/22/14	0:19:00	1802.89	323.85		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2014-04-22T00:19:00	2014-04-22T00:34:01.445000Z	322.862061	323.551132	0.0100198800814	horizons:nu->M
-No	HST	5/2/14	15:15:00	2508.19	328.72		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2014-05-02T15:15:00	2014-05-02T15:35:54.095000Z	328.160757	328.760631	0.00998647723962	horizons:nu->M
-No	HST	11/7/14	16:02:00	7866			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2014-11-07T16:02:00	2014-11-07T17:07:33Z	194.913346	195.181046	0.0090180737142	horizons:nu->M
-No	HST	11/19/14	13:10:00	3150			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2014-11-19T13:10:00	2014-11-19T13:36:15Z	324.257041	324.862608	0.00909676572629	horizons:nu->M
-No	HST	12/7/14	20:25:00	7866			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2014-12-07T20:25:00	2014-12-07T21:30:33Z	35.028048	34.413802	0.00939284544901	horizons:nu->M
-No	HST	12/16/14	17:46:00	7404			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2014-12-16T17:46:00	2014-12-16T18:47:42Z	225.032920	225.753434	0.00884541583239	horizons:nu->M
-No	HST	12/17/14	22:34:00	4362			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2014-12-17T22:34:00	2014-12-17T23:10:21Z	344.236331	344.514836	0.00900439250373	horizons:nu->M
-No	HST	12/28/14	14:26:00	2508.19	354.47		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2014-12-28T14:26:00	2014-12-28T14:46:54.095000Z	353.974429	354.082991	0.00908620679602	horizons:nu->M
-No	HST	1/6/15	14:54:00	1741.85	194.46		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2015-01-06T14:54:00	2015-01-06T15:08:30.925000Z	193.471930	193.718785	0.00918492087944	horizons:nu->M
-No	HST	1/9/15	4:58:00	2508.19	100.43		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2015-01-09T04:58:00	2015-01-09T05:18:54.095000Z	99.864384	98.850938	0.00896646994978	horizons:nu->M
-No	HST	1/10/15	6:26:00	2508.2	208.49		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2015-01-10T06:26:00	2015-01-10T06:46:54.100000Z	207.930586	208.419982	0.00906310008309	horizons:nu->M
-No	HST	1/17/15	2:23:00	2508.2	185.64		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2015-01-17T02:23:00	2015-01-17T02:43:54.100000Z	185.047375	185.136670	0.00879887261997	horizons:nu->M
-No	HST	1/18/15	0:59:00	7854			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2015-01-18T00:59:00	2015-01-18T02:04:27Z	287.006113	288.006702	0.00914949746179	horizons:nu->M
-No	HST	1/26/15	22:17:00	7530			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2015-01-26T22:17:00	2015-01-26T23:19:45Z	109.622760	108.674264	0.00876822929323	horizons:nu->M
-No	HST	2/15/15	11:28:00	2508.2	306.55		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2015-02-15T11:28:00	2015-02-15T11:48:54.100000Z	305.988319	306.838692	0.00920870944479	horizons:nu->M
-No	HST	2/22/15	11:00:00	10272			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2015-02-22T11:00:00	2015-02-22T12:25:36Z	306.049328	306.916771	0.00940169305725	horizons:nu->M
-No	HST	2/24/15	5:58:00	13020			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2015-02-24T05:58:00	2015-02-24T07:46:30Z	127.964169	127.147514	0.00900199353523	horizons:nu->M
-No	HST	3/4/15	7:45:00	1489.27	227.08		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2015-03-04T07:45:00	2015-03-04T07:57:24.635000Z	225.946475	226.710120	0.00922796411008	horizons:nu->M
-No	HST	3/6/15	5:54:00	2508.17	66.44		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2016			2015-03-06T05:54:00	2015-03-06T06:14:54.085000Z	65.872239	64.911891	0.0092089161151	horizons:nu->M
-No	HST	3/9/15	1:03:00	13920			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2015-03-09T01:03:00	2015-03-09T02:59:00Z	354.605530	354.708347	0.00961245751899	horizons:nu->M
-No	HST	3/21/15	16:59:00	10998			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2015-03-21T16:59:00	2015-03-21T18:30:39Z	207.879615	208.363518	0.00897692236424	horizons:nu->M
-No	HST	3/23/15	23:14:00	4356			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2015-03-23T23:14:00	2015-03-23T23:50:18Z	73.313605	72.298488	0.00926657928742	horizons:nu->M
-No	HST	3/28/15	17:42:00	10722			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2015-03-28T17:42:00	2015-03-28T19:11:21Z	203.976352	204.416499	0.00939146321867	horizons:nu->M
-No	HST	4/3/15	15:51:00	1836			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2015-04-03T15:51:00	2015-04-03T16:06:18Z	84.916458	83.829951	0.00952517368071	horizons:nu->M
-No	HST	4/14/15	6:08:00	4326			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	Roth et al., 2016			2015-04-14T06:08:00	2015-04-14T06:44:03Z	85.615658	84.558471	0.00925781732157	horizons:nu->M
-No	Keck 	2/3/16	11:31:00	3660	347	354	Direct observation	Paganini et al., 2019			2016-02-03T11:31:00	2016-02-03T12:01:30Z	350.237462	350.416177	0.00926056604798	horizons:nu->M
-No	Keck 	2/3/16	13:14:00	5820	354	5	Direct observation	Paganini et al., 2019			2016-02-03T13:14:00	2016-02-03T14:02:30Z	358.692643	358.716804	0.00930552532782	horizons:nu->M
-No	Keck	2/5/16	13:48:00	6000	201	204	Direct observation	Paganini et al., 2019			2016-02-05T13:48:00	2016-02-05T14:38:00Z	205.374840	205.820490	0.00901969023126	horizons:nu->M
-No	Keck	2/10/16	11:55:00	9840	344	1	Direct observation	Paganini et al., 2019			2016-02-10T11:55:00	2016-02-10T13:17:00Z	349.314601	349.513381	0.00942059703948	horizons:nu->M
-No	Keck	2/12/16	11:09:00	7440	184	198	Direct observation	Paganini et al., 2019			2016-02-12T11:09:00	2016-02-12T12:11:00Z	188.371335	188.525676	0.00918829826469	horizons:nu->M
-No	Keck	2/12/16	14:17:00	3840	198	205	Direct observation	Paganini et al., 2019			2016-02-12T14:17:00	2016-02-12T14:49:00Z	199.441720	199.792919	0.00914825833258	horizons:nu->M
-No	Keck	2/19/16	10:52:00	9120	178	196	Direct observation	Paganini et al., 2019			2016-02-19T10:52:00	2016-02-19T12:08:00Z	184.638866	184.722929	0.00900960343916	horizons:nu->M
-No	Keck	2/27/16	11:06:00	7920	277	292	Direct observation	Paganini et al., 2019			2016-02-27T11:06:00	2016-02-27T12:12:00Z	281.016109	282.039275	0.00910841529961	horizons:nu->M
-No	Keck	4/12/16	6:29:00	6300	174	188	Direct observation	Paganini et al., 2019			2016-04-12T06:29:00	2016-04-12T07:21:30Z	177.279110	177.231003	0.0087854874029	horizons:nu->M
-No	Keck	4/19/16	7:46:00	3600	174	181	Direct observation	Paganini et al., 2019			2016-04-19T07:46:00	2016-04-19T08:16:00Z	176.739992	176.679553	0.00921070317771	horizons:nu->M
-Yes	Keck	4/26/16	5:32:00	8880	159	176	Direct observation	Paganini et al., 2019			2016-04-26T05:32:00	2016-04-26T06:46:00Z	164.807116	164.541077	0.00880242484977	horizons:nu->M
-No	Keck	4/29/16	8:10:00 AM	5280	115	120	Direct observation	Paganini et al., 2019			2016-04-29T08:10:00	2016-04-29T08:54:00Z	119.414312	118.514642	0.00898322269068	horizons:nu->M
-No	Keck	2/11/17	11:48:00	5280	19	28	Direct observation	Paganini et al., 2019			2017-02-11T11:48:00	2017-02-11T12:32:00Z	22.041754	21.626195	0.0097286453728	horizons:nu->M
-No	Keck	2/17/17	10:47:00	1920	346	359	Direct observation	Paganini et al., 2019			2017-02-17T10:47:00	2017-02-17T11:03:00Z	270.645448	271.725235	0.00942441281373	horizons:nu->M
-No	Keck	3/5/17	11:10:00	4200	100	120	Direct observation	Paganini et al., 2019			2017-03-05T11:10:00	2017-03-05T11:45:00Z	104.888095	103.848030	0.00937472279417	horizons:nu->M
-No	Keck	3/12/17	10:22:00	9660	92	109	Direct observation	Paganini et al., 2019			2017-03-12T10:22:00	2017-03-12T11:42:30Z	96.639521	95.577450	0.00932348293193	horizons:nu->M
-No	Keck	3/15/17	7:50:00	2760	30	39	Direct observation	Paganini et al., 2019			2017-03-15T07:50:00	2017-03-15T08:13:00Z	33.306107	32.722145	0.00933487342914	horizons:nu->M
-No	Keck	3/19/17	11:47:00	3120	93	98	Direct observation	Paganini et al., 2019			2017-03-19T11:47:00	2017-03-19T12:13:00Z	96.231813	95.160015	0.00940172930088	horizons:nu->M
-No	Keck	3/22/17	13:29:00	3300	48	54	Direct observation	Paganini et al., 2019			2017-03-22T13:29:00	2017-03-22T13:56:30Z	51.411146	50.580632	0.00931277590184	horizons:nu->M
-No	Keck	5/7/17	13:29:00	5520	32	42	Direct observation	Paganini et al., 2019			2017-05-07T13:29:00	2017-05-07T14:15:00Z	68.537914	67.569144	0.0091068149877	horizons:nu->M
-Yes	HST	2/22/16		2192	167		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2017			2016-02-22T					
-No	HST	3/4/16		2508	169		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	Sparks et al., 2017			2016-03-04T					
+Detection ?	Observer	Start Date (mm/dd/yyyy)	Start Time (UTC)	Total Exposure (s)	Min true anomaly 	Max true anomaly	Comment on methods	Reference		Encounter	Start (ISO)					*Yellow highlight means that the finding has been contested by at least one paper
+No	HST	10/5/99	8:39:00	9360	343	13	Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2014, 2016"			1999-10-05T08:39:00					
+No	HST	11/8/12	20:41:00	10980	289	318	Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2014, 2016"			2012-11-08T20:41:00					
+No	HST	12/30/12	18:49:00	9840	185	218	Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2014, 2016"			2012-12-30T18:49:00					
+No	HST	12/22/13	6:58:00	1473.88	238.91		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2013-12-22T06:58:00					
+No	HST	1/22/14	14:02:00	11004			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2014b, 2016"			2014-01-22T14:02:00					
+Yes	HST	1/26/14	18:05:00	2023.24	260.08		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2014-01-26T18:05:00					
+No	HST	2/2/14	8:19:00	11004			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2014b, 2016"			2014-02-02T08:19:00					
+No	HST	2/27/14	19:57:00	2507.19	296.56		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2014-02-27T19:57:00					
+Yes	HST	3/17/14	11:47:00	2389.45	296.83		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2014-03-17T11:47:00					
+No	HST	3/24/14	12:45:00	2232.8	295.03		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2014-03-24T12:45:00					
+Yes	HST	4/4/14	5:20:00	2200.41	310.31		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2014-04-04T05:20:00					
+No	HST	4/14/14	21:52:00	2119.05	316.94		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2014-04-14T21:52:00					
+No	HST	4/22/14	0:19:00	1802.89	323.85		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2014-04-22T00:19:00					
+No	HST	5/2/14	15:15:00	2508.19	328.72		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2014-05-02T15:15:00					
+No	HST	11/7/14	16:02:00	7866			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2014-11-07T16:02:00					
+No	HST	11/19/14	13:10:00	3150			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2014-11-19T13:10:00					
+No	HST	12/7/14	20:25:00	7866			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2014-12-07T20:25:00					
+No	HST	12/16/14	17:46:00	7404			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2014-12-16T17:46:00					
+No	HST	12/17/14	22:34:00	4362			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2014-12-17T22:34:00					
+No	HST	12/28/14	14:26:00	2508.19	354.47		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2014-12-28T14:26:00					
+No	HST	1/6/15	14:54:00	1741.85	194.46		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2015-01-06T14:54:00					
+No	HST	1/9/15	4:58:00	2508.19	100.43		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2015-01-09T04:58:00					
+No	HST	1/10/15	6:26:00	2508.2	208.49		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2015-01-10T06:26:00					
+No	HST	1/17/15	2:23:00	2508.2	185.64		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2015-01-17T02:23:00					
+No	HST	1/18/15	0:59:00	7854			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2015-01-18T00:59:00					
+No	HST	1/26/15	22:17:00	7530			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2015-01-26T22:17:00					
+No	HST	2/15/15	11:28:00	2508.2	306.55		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2015-02-15T11:28:00					
+No	HST	2/22/15	11:00:00	10272			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2015-02-22T11:00:00					
+No	HST	2/24/15	5:58:00	13020			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2015-02-24T05:58:00					
+No	HST	3/4/15	7:45:00	1489.27	227.08		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2015-03-04T07:45:00					
+No	HST	3/6/15	5:54:00	2508.17	66.44		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2016"			2015-03-06T05:54:00					
+No	HST	3/9/15	1:03:00	13920			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2015-03-09T01:03:00					
+No	HST	3/21/15	16:59:00	10998			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2015-03-21T16:59:00					
+No	HST	3/23/15	23:14:00	4356			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2015-03-23T23:14:00					
+No	HST	3/28/15	17:42:00	10722			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2015-03-28T17:42:00					
+No	HST	4/3/15	15:51:00	1836			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2015-04-03T15:51:00					
+No	HST	4/14/15	6:08:00	4326			Limb observation of hydrogen Lyman-alpha and oxygen OI 130.4 and 135.6-nanometer (emission)	"Roth et al., 2016"			2015-04-14T06:08:00					
+No	Keck	2/3/16	11:31:00	3660	347	354	Direct observation	"Paganini et al., 2019"			2016-02-03T11:31:00					
+No	Keck	2/3/16	13:14:00	5820	354	5	Direct observation	"Paganini et al., 2019"			2016-02-03T13:14:00					
+No	Keck	2/5/16	13:48:00	6000	201	204	Direct observation	"Paganini et al., 2019"			2016-02-05T13:48:00					
+No	Keck	2/10/16	11:55:00	9840	344	1	Direct observation	"Paganini et al., 2019"			2016-02-10T11:55:00					
+No	Keck	2/12/16	11:09:00	7440	184	198	Direct observation	"Paganini et al., 2019"			2016-02-12T11:09:00					
+No	Keck	2/12/16	14:17:00	3840	198	205	Direct observation	"Paganini et al., 2019"			2016-02-12T14:17:00					
+No	Keck	2/19/16	10:52:00	9120	178	196	Direct observation	"Paganini et al., 2019"			2016-02-19T10:52:00					
+No	Keck	2/27/16	11:06:00	7920	277	292	Direct observation	"Paganini et al., 2019"			2016-02-27T11:06:00					
+No	Keck	4/12/16	6:29:00	6300	174	188	Direct observation	"Paganini et al., 2019"			2016-04-12T06:29:00					
+No	Keck	4/19/16	7:46:00	3600	174	181	Direct observation	"Paganini et al., 2019"			2016-04-19T07:46:00					
+Yes	Keck	4/26/16	5:32:00	8880	159	176	Direct observation	"Paganini et al., 2019"			2016-04-26T05:32:00					
+No	Keck	4/29/16	8:10:00 AM	5280	115	120	Direct observation	"Paganini et al., 2019"			2016-04-29T08:10:00					
+No	Keck	2/11/17	11:48:00	5280	19	28	Direct observation	"Paganini et al., 2019"			2017-02-11T11:48:00					
+No	Keck	2/17/17	10:47:00	1920	346	359	Direct observation	"Paganini et al., 2019"			2017-02-17T10:47:00					
+No	Keck	3/5/17	11:10:00	4200	100	120	Direct observation	"Paganini et al., 2019"			2017-03-05T11:10:00					
+No	Keck	3/12/17	10:22:00	9660	92	109	Direct observation	"Paganini et al., 2019"			2017-03-12T10:22:00					
+No	Keck	3/15/17	7:50:00	2760	30	39	Direct observation	"Paganini et al., 2019"			2017-03-15T07:50:00					
+No	Keck	3/19/17	11:47:00	3120	93	98	Direct observation	"Paganini et al., 2019"			2017-03-19T11:47:00					
+No	Keck	3/22/17	13:29:00	3300	48	54	Direct observation	"Paganini et al., 2019"			2017-03-22T13:29:00					
+No	Keck	5/7/17	13:29:00	5520	32	42	Direct observation	"Paganini et al., 2019"			2017-05-07T13:29:00					
+Yes	HST	2/22/16		2192	167		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2017"			2016-02-22T					
+No	HST	3/4/16		2508	169		Direct imaging of Europa's limb when transiting in front of Jupiter (absorbtion)	"Sparks et al., 2017"			2016-03-04T					
+																
+Yes	Galileo	12/16/97	12:00:59	278			Magnetometer	"Jia et al., 2018"		E12	1997-12-16T12:00:59					
+No	Galileo	1/3/00	CA 17:59:43				Magnetometer	"Jia et al., 2018"		E26	2000-01-02T17:59:43					
+																
+Yes	Subaru	7/17/21	10:21:00	8400	252	272	Direct observation	"Kimura et al., 2024"			2021-07-17T10:21:00					
+No	JWST	11/23/22					Spectroscopic	"Villanueva et al., 2023"			2022-11-23T00:00:00					
