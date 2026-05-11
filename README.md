@@ -59,7 +59,6 @@ StressViz builds on the foundation of SatStressGUI, a program developed at the J
 - StressViz is an extension of SatStressGUI V6.0, adding orbital position visualization, encounter metadata integration, and new user interface features.
 
 #References
-- G. L. Villanueva et al. ,Endogenous CO2 ice mixture on the surface of Europa and no detection of    plume activity.Science381,1305-1308(2023).DOI:10.1126/science.adg4270
 - Jia, Xianzhe, et al. "Evidence of a plume on Europa from Galileo magnetic and plasma wave signatures." Nature Astronomy 2.6 (2018): 459-464.
 - Kimura, Jun, et al. "A search for water vapor plumes on Europa by spatially resolved spectroscopic observation using Subaru/IRCS." Publications of the Astronomical Society of Japan 76.6 (2024): 1302-1308.
 - Paganini, Lucas, et al. "A measurement of water vapour amid a largely quiescent environment on Europa." Nature Astronomy 4.3 (2020): 266-272.

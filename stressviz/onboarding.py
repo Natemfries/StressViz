@@ -28,32 +28,29 @@ def _mark_first_run_seen():
     c.WriteBool("first_run_seen", True)
     c.Flush()
 
-# -------------- Modeless guide window --------------
-class GettingStartedFrame(wx.Frame):
+class GettingStartedPanel(wx.Panel):
     def __init__(self, parent, docs_url: str | None = None):
-        # Keep it light; allow resize so long content fits small screens
-        super().__init__(parent,
-                         title="Welcome to StressViz",
-                         size=(680, 560))
+        super().__init__(parent)
 
         self._docs_url = docs_url
 
-        panel = wx.Panel(self)
         vbox = wx.BoxSizer(wx.VERTICAL)
 
         # Header
-        hdr = wx.StaticText(panel, label="Getting Started with StressViz")
+        hdr = wx.StaticText(self, label="Getting Started with StressViz")
         f = hdr.GetFont()
         f.SetPointSize(f.GetPointSize() + 4)
+
         try:
             f.MakeBold()
         except AttributeError:
             f.SetWeight(wx.FONTWEIGHT_BOLD)
+
         hdr.SetFont(f)
         vbox.Add(hdr, 0, wx.ALL | wx.ALIGN_CENTER, 10)
 
-        # Body (HtmlWindow)
-        html = wxhtml.HtmlWindow(panel, style=wxhtml.HW_SCROLLBAR_AUTO)
+        # Body
+        html = wxhtml.HtmlWindow(self, style=wxhtml.HW_SCROLLBAR_AUTO)
         html.SetPage(_HTML_BODY)
         vbox.Add(html, 1, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
 
@@ -62,26 +59,13 @@ class GettingStartedFrame(wx.Frame):
         btn_row.AddStretchSpacer(1)
 
         if self._docs_url:
-            btn_docs = wx.Button(panel, wx.ID_ANY, "Open Documentation")
+            btn_docs = wx.Button(self, wx.ID_ANY, "Open Documentation")
             btn_row.Add(btn_docs, 0, wx.ALL, 6)
             self.Bind(wx.EVT_BUTTON, self._on_open_docs, btn_docs)
 
-        btn_ok = wx.Button(panel, wx.ID_OK, "Continue")
-        btn_ok.SetDefault()
-        btn_row.Add(btn_ok, 0, wx.ALL, 6)
         vbox.Add(btn_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
-        panel.SetSizer(vbox)
-
-        # Events
-        self.Bind(wx.EVT_BUTTON, lambda _e: self.Close(), btn_ok)
-        self.Bind(wx.EVT_CLOSE, self._on_close)
-
-        # Placement
-        try:
-            self.CentreOnParent() if parent else self.Centre()
-        except Exception:
-            self.Centre()
+        self.SetSizer(vbox)
 
     def _on_open_docs(self, _evt):
         url = self._docs_url
@@ -91,10 +75,27 @@ class GettingStartedFrame(wx.Frame):
             except Exception:
                 pass
 
-    def _on_close(self, evt):
-        # Destroy safely; parent cleanup happens in show_getting_started
-        self.Destroy()
-        evt.Skip()
+# -------------- Modeless guide window --------------
+class GettingStartedFrame(wx.Frame):
+    def __init__(self, parent, docs_url: str | None = None):
+        super().__init__(
+            parent,
+            title="Welcome to StressViz",
+            size=(680, 560)
+        )
+
+        panel = GettingStartedPanel(self, docs_url=docs_url)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(panel, 1, wx.EXPAND)
+        self.SetSizer(sizer)
+
+        self.Bind(wx.EVT_CLOSE, self._on_close)
+
+        try:
+            self.CentreOnParent() if parent else self.Centre()
+        except Exception:
+            self.Centre()
 
 # -------------- Public API --------------
 # Keep a global fallback reference if no parent is provided

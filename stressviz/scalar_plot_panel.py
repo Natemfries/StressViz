@@ -3338,9 +3338,14 @@ def get_or_create_scalar_popup(
     parent,
     get_system_id: Optional[Callable[[], str]] = None,
     get_encounter_id: Optional[Callable[[], Optional[str]]] = None,
-) -> Tuple[wx.Frame, "ScalarPlotPanel"]:
+) -> "ScalarPlotPanel":
     """
-    Build the ScalarPlotPanel popup safely.
+    Build the ScalarPlotPanel inside the Stress Plot tab instead of a popup.
+
+    Requires AnalysisControlPanel to have:
+        self.plot_tab
+        self.notebook
+    assigned from StressVizFrame.
     """
 
     def _maybe(chain: Tuple[str, ...]):
@@ -3352,14 +3357,33 @@ def get_or_create_scalar_popup(
         return obj if callable(obj) else None
 
     if get_system_id is None:
-        get_system_id = _maybe(("get_system_id",)) or _maybe(("global_params_panel", "get_system_id"))
-    if get_encounter_id is None:
-        get_encounter_id = _maybe(("get_selected_encounter_id",)) or _maybe(("point_panel", "get_selected_encounter_id"))
-    get_eccentricity = _maybe(("get_eccentricity",)) or _maybe(("global_params_panel", "get_eccentricity"))
+        get_system_id = (
+            _maybe(("get_system_id",))
+            or _maybe(("global_params_panel", "get_system_id"))
+        )
 
-    frame = wx.Frame(parent, title="StressViz Map", size=(1100, 780))
+    if get_encounter_id is None:
+        get_encounter_id = (
+            _maybe(("get_selected_encounter_id",))
+            or _maybe(("point_panel", "get_selected_encounter_id"))
+        )
+
+    get_eccentricity = (
+        _maybe(("get_eccentricity",))
+        or _maybe(("global_params_panel", "get_eccentricity"))
+    )
+
+    # ---------- use notebook tab instead of popup frame ----------
+    host = getattr(parent, "plot_tab", None)
+    if host is None:
+        raise RuntimeError("AnalysisControlPanel.plot_tab is not connected.")
+
+    # Clear old contents from the Stress Plot tab
+    for child in host.GetChildren():
+        child.Destroy()
+
     panel = ScalarPlotPanel(
-        frame,
+        host,
         get_system_id=get_system_id,
         get_encounter_id=get_encounter_id,
         get_eccentricity=(get_eccentricity or (lambda: 0.0)),
@@ -3367,63 +3391,63 @@ def get_or_create_scalar_popup(
 
     sizer = wx.BoxSizer(wx.VERTICAL)
     sizer.Add(panel, 1, wx.EXPAND)
-    frame.SetSizer(sizer)
-    frame.SetClientSize((panel.FromDIP(1250), panel.FromDIP(860)))  # width, height
-    frame.SetMinSize((panel.FromDIP(1100), panel.FromDIP(780)))
-    frame.Layout()
+    host.SetSizer(sizer)
+    host.Layout()
 
     try:
         parent.scalar_panel_ref = panel
+        parent.stress_panel = panel
     except Exception:
         pass
 
     try:
-        host = wx.GetTopLevelParent(parent)
-        if host is not None:
-            host.scalar_panel_ref = panel
+        top = wx.GetTopLevelParent(parent)
+        if top is not None:
+            top.scalar_panel_ref = panel
     except Exception:
         pass
 
+    # Switch to Stress Plot tab
     try:
-        frame.scalar_panel_ref = panel
+        notebook = getattr(parent, "notebook", None)
+        if notebook is not None:
+            notebook.SetSelection(1)
     except Exception:
         pass
-
-    frame.Centre()
-    frame.Show()
 
     def _deferred_init():
         # Hook orbit "goto" function
         try:
             orbit = getattr(parent, "orbit_panel", None)
             if orbit is not None:
-                goto = getattr(orbit, "highlight_active", None) or getattr(orbit, "_draw_orbit_position", None)
+                goto = (
+                    getattr(orbit, "highlight_active", None)
+                    or getattr(orbit, "_draw_orbit_position", None)
+                )
                 if callable(goto):
                     panel._goto_nu = lambda deg: goto(float(deg))
+
             if not callable(getattr(panel, "_goto_nu", None)) and hasattr(panel, "_draw_orbit_position"):
                 panel._goto_nu = lambda deg: panel._draw_orbit_position(float(deg))
         except Exception:
             pass
 
-        # True anomaly resolver (Horizons) from parent/control panel (optional)
+        # True anomaly resolver from parent/control panel
         try:
-            resolver = None
-
-            # 1) explicit hook if parent already exposes it
             resolver = getattr(parent, "_resolve_true_anomaly", None)
             if callable(resolver):
                 panel._nu_resolver = resolver
             else:
-                # 2) common locations: control_panel or analysis_control_panel
-                cp = getattr(parent, "control_panel", None) or getattr(parent, "analysis_control_panel", None)
+                cp = (
+                    getattr(parent, "control_panel", None)
+                    or getattr(parent, "analysis_control_panel", None)
+                )
                 if cp is not None:
-                    # your ACP method is currently named "_"
                     cand = getattr(cp, "_", None)
                     if callable(cand):
                         panel._nu_resolver = cand
         except Exception:
             pass
-
 
         # Populate encounters and sync selection
         try:
@@ -3431,7 +3455,10 @@ def get_or_create_scalar_popup(
             ids: List[str] = sorted(enc_map.keys(), key=lambda x: str(x))
 
             current_sel = None
-            get_sel = _maybe(("get_selected_encounter_id",)) or _maybe(("point_panel", "get_selected_encounter_id"))
+            get_sel = (
+                _maybe(("get_selected_encounter_id",))
+                or _maybe(("point_panel", "get_selected_encounter_id"))
+            )
             if callable(get_sel):
                 try:
                     current_sel = get_sel()
@@ -3460,13 +3487,17 @@ def get_or_create_scalar_popup(
                         "lat_deg": rec.get("lat_deg") or rec.get("lat"),
                         "lon_deg": rec.get("lon_deg") or rec.get("lon"),
                     })
+
                 try:
                     panel._encounters = encs
                     if hasattr(panel, "_refresh_encounter_choices"):
                         panel._refresh_encounter_choices()
                     if current_sel and hasattr(panel, "cmb_enc"):
                         try:
-                            idx = next(i for i, e in enumerate(encs) if e.get("id") == current_sel)
+                            idx = next(
+                                i for i, e in enumerate(encs)
+                                if e.get("id") == current_sel
+                            )
                             panel.cmb_enc.SetSelection(idx)
                         except StopIteration:
                             pass
@@ -3475,16 +3506,20 @@ def get_or_create_scalar_popup(
         except Exception:
             pass
 
-        # --- Snap initial position to the selected encounter's exact M by injecting ν0 ---
+        # Snap initial position to selected encounter's exact M
         try:
-            # Find selected encounter id
             sel_id = None
-            get_sel = _maybe(("get_selected_encounter_id",)) or _maybe(("point_panel", "get_selected_encounter_id"))
+            get_sel = (
+                _maybe(("get_selected_encounter_id",))
+                or _maybe(("point_panel", "get_selected_encounter_id"))
+            )
+
             if callable(get_sel):
                 try:
                     sel_id = get_sel()
                 except Exception:
                     sel_id = None
+
             if sel_id is None and getattr(panel, "cmb_enc", None):
                 try:
                     sel_txt = panel.cmb_enc.GetStringSelection()
@@ -3493,7 +3528,6 @@ def get_or_create_scalar_popup(
                 except Exception:
                     pass
 
-            # Resolve target M
             M0 = None
             if sel_id is not None:
                 try:
@@ -3504,37 +3538,43 @@ def get_or_create_scalar_popup(
             if M0 is not None and np.isfinite(M0):
                 def _inject_and_snap():
                     try:
-                        # Wait until series is bound (nus + eval_fn ready)
                         if not (panel._eval_fn and panel._nus):
                             wx.CallLater(50, _inject_and_snap)
                             return
 
-                        # Compute e and exact ν0 that maps to M0
                         e = panel._ecc_safe()
-                        nu0 = _mean_to_true_anomaly_deg(M0, e)  # exact inverse
+                        nu0 = _mean_to_true_anomaly_deg(M0, e)
 
-                        # If ν0 already present near some step, just snap to it
-                        Ms = [float(_true_to_mean_anomaly_deg(nu, e)) % 360.0 for nu in panel._nus]
-                        diffs = [abs(((m - M0) + 180.0) % 360.0 - 180.0) for m in Ms]
+                        Ms = [
+                            float(_true_to_mean_anomaly_deg(nu, e)) % 360.0
+                            for nu in panel._nus
+                        ]
+                        diffs = [
+                            abs(((m - M0) + 180.0) % 360.0 - 180.0)
+                            for m in Ms
+                        ]
                         k = int(np.argmin(diffs))
+
                         if diffs[k] <= (360.0 / max(1, len(panel._nus))) * 0.25:
-                            # Close enough—just snap
                             panel._idx = k
-                            try: panel.sld_orbit.SetValue(k)
-                            except Exception: pass
+                            try:
+                                panel.sld_orbit.SetValue(k)
+                            except Exception:
+                                pass
                             panel._evaluate_and_plot()
-                            panel._startup_target_M = float(M0)   
-                            panel._init_snap_done = True      
+                            panel._startup_target_M = float(M0)
+                            panel._init_snap_done = True
                             return
 
-                        # Otherwise, inject ν0 as a first step so we hit M0 exactly
                         panel._nus = [float(nu0)] + list(panel._nus)
                         panel._idx = 0
+
                         try:
                             panel.sld_orbit.SetRange(0, max(0, len(panel._nus) - 1))
                             panel.sld_orbit.SetValue(0)
                         except Exception:
                             pass
+
                         panel._evaluate_and_plot()
                         panel._startup_target_M = float(M0)
                         panel._init_snap_done = True
@@ -3546,10 +3586,9 @@ def get_or_create_scalar_popup(
         except Exception:
             pass
 
-
     wx.CallLater(1, _deferred_init)
 
-    return frame, panel
+    return panel
 
 
 

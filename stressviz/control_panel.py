@@ -1489,7 +1489,7 @@ class AnalysisControlPanel(ScrolledPanel):
         nus   = np.linspace(nu_min,  nu_max,  n_nu)
 
         # ---------- build / show panel ----------
-        frame, panel = get_or_create_scalar_popup(self)  # parent = control panel
+        panel = get_or_create_scalar_popup(self)  # parent = control panel
         self._push_encounters_to_scalar_panel(
             select_id=getattr(self, "get_selected_encounter_id", lambda: None)()
         )

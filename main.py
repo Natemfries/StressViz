@@ -13,9 +13,11 @@ if os.path.isdir(SATSTRESS_DIR) and SATSTRESS_DIR not in sys.path:
 
 # ----------------- StressViz imports -----------------
 from stressviz.control_panel import AnalysisControlPanel
+from stressviz.scalar_plot_panel import ScalarPlotPanel
+
 
 # Onboarding (modeless, deferred)
-from stressviz.onboarding import maybe_show_getting_started, show_getting_started
+from stressviz.onboarding import GettingStartedPanel, show_getting_started
 
 # Optional docs URL for the onboarding window (or leave as None)
 DOCS_URL = None  # e.g., "https://github.com/YourOrg/StressViz#readme"
@@ -29,22 +31,38 @@ except Exception:
 
 class StressVizFrame(wx.Frame):
     def __init__(self):
-        super().__init__(None, title="StressViz", size=(1150, 750))
+        super().__init__(None, title="StressViz", size=(1450, 1050))
 
-        # Central control panel
-        self.control = AnalysisControlPanel(self)
+        self.notebook = wx.Notebook(self)
+
+        # Tab 1: controls
+        self.control = AnalysisControlPanel(self.notebook)
+
+        # Tab 2: empty host where on_open_map will place the real plot panel
+        self.plot_tab = wx.Panel(self.notebook)
+
+        # Tab 3: getting started
+        self.getting_started_tab = wx.Panel(self.notebook)
+
+        self.notebook.AddPage(self.control, "Controls")
+        self.notebook.AddPage(self.plot_tab, "Plots")
+        self.notebook.AddPage(self.getting_started_tab, "Getting Started")
+
+        # Give AnalysisControlPanel access to the tab
+        self.control.notebook = self.notebook
+        self.control.plot_tab = self.plot_tab
+        self.control.stress_panel = None
+        self._build_getting_started_tab()
 
         root = wx.BoxSizer(wx.VERTICAL)
-        root.Add(self.control, 1, wx.EXPAND | wx.ALL, 8)
+        root.Add(self.notebook, 1, wx.EXPAND)
         self.SetSizer(root)
         self.Centre()
 
-        # Menus, accelerators, status bar
         self._build_menu()
         self.CreateStatusBar()
         self.SetStatusText("Ready")
 
-        # Defer non-essential work so the window appears instantly
         wx.CallAfter(self._post_show_deferred)
 
     # ----------------- UI wiring -----------------
@@ -70,7 +88,18 @@ class StressVizFrame(wx.Frame):
         self.SetAcceleratorTable(accel_tbl)
 
     def on_open_getting_started(self, _evt):
-        show_getting_started(self, docs_url=DOCS_URL)
+        self.notebook.SetSelection(2)
+
+    def _build_getting_started_tab(self):
+        panel = GettingStartedPanel(
+            self.getting_started_tab,
+            docs_url=DOCS_URL,
+        )
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(panel, 1, wx.EXPAND)
+        self.getting_started_tab.SetSizer(sizer)
+        self.getting_started_tab.Layout()
 
     # ----------------- Deferred work after first paint -----------------
     def _post_show_deferred(self):
