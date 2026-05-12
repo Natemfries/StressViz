@@ -472,7 +472,7 @@ class ScalarPlotPanel(wx.Panel):
         right.Add(grid, 0, wx.EXPAND | wx.ALL, 6)
 
         # ----- Encounters controls -----
-        enc_box = wx.StaticBox(rp, label="Encounters")
+        enc_box = wx.StaticBox(rp, label="Observation Events")
         enc_outer = wx.StaticBoxSizer(enc_box, wx.VERTICAL)
 
         # row: add + plot
@@ -482,18 +482,20 @@ class ScalarPlotPanel(wx.Panel):
         self.btn_nearby = wx.Button(rp, label="Show nearby events (+/-10°)")
         self.btn_move_stress = wx.Button(rp, label="Move Stress Plot")
         self.btn_plot_enc = wx.Button(rp, label="Plot on Orbit")
-        #self.btn_clear_enc = wx.Button(rp, label="Clear")  # optional but nice
+        self.btn_toggle_all = wx.Button(rp, label="Select/Deselect All")
 
         enc_row1.Add(self.btn_add_enc, 0, wx.RIGHT, 6)
-        #enc_row1.AddStretchSpacer(1)
-        #enc_row.Add(self.btn_clear_enc, 0, wx.RIGHT, 6)
+        enc_row1.AddSpacer(8)
         enc_row1.Add(self.btn_nearby, 0)
+        enc_row1.AddSpacer(8)
+        enc_row1.Add(self.btn_toggle_all, 0)
 
         enc_outer.Add(enc_row1, 0, wx.EXPAND | wx.ALL, 4)
 
         enc_row2 = wx.BoxSizer(wx.HORIZONTAL)
 
         enc_row2.Add(self.btn_move_stress, 0)
+        enc_row2.AddSpacer(8)
         #enc_row2.AddStretchSpacer(1)
         enc_row2.Add(self.btn_plot_enc, 0)
 
@@ -518,8 +520,9 @@ class ScalarPlotPanel(wx.Panel):
         self.btn_plot_enc.Bind(wx.EVT_BUTTON, self._on_plot_selected_encounters)
         self.btn_nearby.Bind(wx.EVT_BUTTON, self._on_show_nearby_events)
         self.btn_move_stress.Bind(wx.EVT_BUTTON, self._on_move_stress_plot_to_selected_encounter)
+        self.btn_toggle_all.Bind(wx.EVT_BUTTON, self._on_toggle_all_encounters)
 
-        right.Add(enc_outer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
+        right.Add(enc_outer, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 6)
 
 
         # Add right column to main
@@ -1187,6 +1190,26 @@ class ScalarPlotPanel(wx.Panel):
             self._selected_enabled_by_id[STRESS_PLOT_ID] = True  # default = show ν
         self._enc_display_by_id[STRESS_PLOT_ID] = STRESS_PLOT_LABEL
 
+        # --- Sort rows ---
+        other_ids = [
+            eid for eid in self._selected_encounter_ids
+            if eid != STRESS_PLOT_ID
+        ]
+
+        checked = sorted(
+            [eid for eid in other_ids if self._selected_enabled_by_id.get(eid, False)],
+            key=lambda eid: self._enc_display_by_id.get(eid, eid).lower()
+        )
+
+        unchecked = sorted(
+            [eid for eid in other_ids if not self._selected_enabled_by_id.get(eid, False)],
+            key=lambda eid: self._enc_display_by_id.get(eid, eid).lower()
+        )
+
+        self._selected_encounter_ids = (
+            [STRESS_PLOT_ID] + checked + unchecked
+        )
+
     def _enc_id_of(self, enc: dict) -> Optional[str]:
         eid = enc.get("id") or enc.get("encounter_id")
         eid = str(eid).strip() if eid is not None else ""
@@ -1212,6 +1235,7 @@ class ScalarPlotPanel(wx.Panel):
             if str(self.chk_selected_enc.GetClientData(i) or "") == enc_id:
                 return i
         return None
+        
 
     def _sync_checklist_from_model(self) -> None:
         """Rebuild the CheckListBox to match the internal subset + enabled state."""
@@ -1435,6 +1459,7 @@ class ScalarPlotPanel(wx.Panel):
             caption="Add Encounters",
             choices=labels,
         )
+        dlg.SetSize((350,550))
         try:
             if preselect:
                 dlg.SetSelections(preselect)
@@ -1445,19 +1470,31 @@ class ScalarPlotPanel(wx.Panel):
             dlg.Destroy()
 
         picked_ids = [ids[i] for i in sel_idx if 0 <= i < len(ids)]
-        if not picked_ids:
-            return
+        
+        self._selected_encounter_ids = [STRESS_PLOT_ID]
 
         for eid in picked_ids:
-            if eid in prev_set:
+            if eid == STRESS_PLOT_ID:
                 continue
-            prev_set.add(eid)
-            self._selected_encounter_ids.append(eid)
-            self._selected_enabled_by_id[eid] = True
 
             enc = self._enc_by_id_local(eid) or {"id": eid}
             self._enc_display_by_id[eid] = self._enc_display_label(enc)
 
+            # New rows default to checked/plotted.
+            if eid not in self._selected_enabled_by_id:
+                self._selected_enabled_by_id[eid] = True
+
+            self._selected_encounter_ids.append(eid)
+
+        # Remove stale enabled states for rows that no longer exist.
+        valid_ids = set(self._selected_encounter_ids)
+        self._selected_enabled_by_id = {
+            eid: enabled
+            for eid, enabled in self._selected_enabled_by_id.items()
+            if eid in valid_ids
+        }
+
+        self._ensure_multi_enc_state()
         self._sync_rows_from_model()
 
     def _on_toggle_selected_encounter(self, evt) -> None:
@@ -1476,6 +1513,33 @@ class ScalarPlotPanel(wx.Panel):
             op = getattr(self, "orb_panel", None)
             if op and hasattr(op, "set_show_nu_marker"):
                 op.set_show_nu_marker(checked)
+
+    def _on_toggle_all_encounters(self, _evt=None) -> None:
+        """Toggle all non-Stress Plot encounter rows on/off."""
+        self._ensure_multi_enc_state()
+
+        encounter_ids = [
+            eid for eid in self._selected_encounter_ids
+            if eid != STRESS_PLOT_ID
+        ]
+
+        if not encounter_ids:
+            return
+
+        # If any are unchecked, select all. Otherwise deselect all.
+        should_select = any(
+            not self._selected_enabled_by_id.get(eid, False)
+            for eid in encounter_ids
+        )
+
+        for eid in encounter_ids:
+            self._selected_enabled_by_id[eid] = should_select
+
+        self._ensure_multi_enc_state()
+        self._sync_rows_from_model()
+
+        if hasattr(self, "_notify_orbit_selection_changed"):
+            self._notify_orbit_selection_changed()
 
     def _on_plot_selected_encounters(self, _evt=None) -> None:
         """Plot all CHECKED encounters from the subset (refreshes every button click)."""
