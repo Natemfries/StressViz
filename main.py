@@ -35,18 +35,18 @@ class StressVizFrame(wx.Frame):
 
         self.notebook = wx.Notebook(self)
 
-        # Tab 1: controls
-        self.control = AnalysisControlPanel(self.notebook)
-
-        # Tab 2: empty host where on_open_map will place the real plot panel
-        self.plot_tab = wx.Panel(self.notebook)
-
-        # Tab 3: getting started
+        # Tab 1: getting started
         self.getting_started_tab = wx.Panel(self.notebook)
 
+        # Tab 2: controls
+        self.control = AnalysisControlPanel(self.notebook)
+
+        # Tab 3: empty host where on_open_map will place the real plot panel
+        self.plot_tab = wx.Panel(self.notebook)
+
+        self.notebook.AddPage(self.getting_started_tab, "Getting Started")
         self.notebook.AddPage(self.control, "Controls")
         self.notebook.AddPage(self.plot_tab, "Plots")
-        self.notebook.AddPage(self.getting_started_tab, "Getting Started")
 
         # Give AnalysisControlPanel access to the tab
         self.control.notebook = self.notebook
@@ -88,7 +88,7 @@ class StressVizFrame(wx.Frame):
         self.SetAcceleratorTable(accel_tbl)
 
     def on_open_getting_started(self, _evt):
-        self.notebook.SetSelection(2)
+        self.notebook.SetSelection(0)
 
     def _build_getting_started_tab(self):
         panel = GettingStartedPanel(
