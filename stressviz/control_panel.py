@@ -255,10 +255,6 @@ class AnalysisControlPanel(ScrolledPanel):
         self.update_btn.Enable(False)
         self.Bind(wx.EVT_BUTTON, self.on_open_map, self.update_btn)
 
-        # Getting Started button (opens the onboarding dialog)
-        self.btn_getting_started = wx.Button(self, label="Getting Started")
-        self.btn_getting_started.Bind(wx.EVT_BUTTON, self._on_open_getting_started)
-
 
         # --- A handy Europa preset button -----------------------------------------
         #self.btn_europa_preset = wx.Button(self, label="Europa Preset")
@@ -294,7 +290,6 @@ class AnalysisControlPanel(ScrolledPanel):
         hdr = wx.BoxSizer(wx.HORIZONTAL)
         hdr.Add(instr_label(self, "Load or input satellite parameters:"), 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
         hdr.AddStretchSpacer(1)
-        hdr.Add(self.btn_getting_started, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
         sizer.Add(hdr, 0, wx.EXPAND)
 
 

@@ -157,7 +157,7 @@ class PointStressPanel(wx.Panel):
 
         # ---- Resolve ν row (button + fixed-width status) ----
         row2c = wx.BoxSizer(wx.HORIZONTAL)
-        self.btn_nu = wx.Button(self._in_inner, label="Resolve ν")
+        self.btn_nu = wx.Button(self._in_inner, label="Resolve Orbital Phase")
         self.btn_nu.Bind(wx.EVT_BUTTON, self.autofill_phase_from_time)
         row2c.Add(self.btn_nu, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
@@ -167,48 +167,61 @@ class PointStressPanel(wx.Panel):
         row2c.Add(self.lbl_nu_status, 0, wx.ALIGN_CENTER_VERTICAL)
         col.Add(row2c, 0, wx.ALL, 4)
 
-        # ---- Lat/Lon (angle as colat θ by default) ----
+
         theta = "\N{GREEK SMALL LETTER THETA}"
         deg   = "\N{DEGREE SIGN}"
 
-        row3 = wx.BoxSizer(wx.HORIZONTAL)
-
-        self.lbl_angle = wx.StaticText(self._in_inner, label=f"Lat ({deg}):")
-        row3.Add(self.lbl_angle, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
-        self.txt_angle = wx.TextCtrl(self._in_inner, value="", size=(100, -1))
-        row3.Add(self.txt_angle, 0, wx.RIGHT, 12)
-
-        row3.Add(wx.StaticText(self._in_inner, label=f"Lon ({deg}E):"), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
-        self.txt_lon = wx.TextCtrl(self._in_inner, value="", size=(100, -1))
-        row3.Add(self.txt_lon, 0)
-        col.Add(row3, 0, wx.ALL, 4)
-
         # ---- ν (true) and M (mean) on one row ----
-        row4 = wx.FlexGridSizer(0, 4, 0, 6)   # 4 cols: label ν | ν | label M | M
-        row4.AddGrowableCol(1, 1)              # let ν field stretch a bit
-        row4.AddGrowableCol(3, 1)              # let M field stretch a bit
+        row3 = wx.FlexGridSizer(0, 4, 0, 6)
+        row3.AddGrowableCol(1, 1)
+        row3.AddGrowableCol(3, 1)
 
         lbl_nu = wx.StaticText(self._in_inner, label=f"True Anomaly ({deg}):")
-        row4.Add(lbl_nu, 0, wx.ALIGN_CENTER_VERTICAL)
+        row3.Add(lbl_nu, 0, wx.ALIGN_CENTER_VERTICAL)
 
         self.txt_nu = wx.TextCtrl(self._in_inner, value="", size=(100, -1))
-        row4.Add(self.txt_nu, 1, wx.EXPAND)
+        row3.Add(self.txt_nu, 1, wx.EXPAND)
 
         lbl_M = wx.StaticText(self._in_inner, label=f"Mean Anomaly (M) ({deg}):")
-        row4.Add(lbl_M, 0, wx.ALIGN_CENTER_VERTICAL)
+        row3.Add(lbl_M, 0, wx.ALIGN_CENTER_VERTICAL)
 
-        self.txt_M = wx.TextCtrl(self._in_inner, value="", size=(100, -1), style=wx.TE_READONLY)
-        row4.Add(self.txt_M, 1, wx.EXPAND)
+        self.txt_M = wx.TextCtrl(
+            self._in_inner,
+            value="",
+            size=(100, -1),
+            style=wx.TE_READONLY
+        )
+        row3.Add(self.txt_M, 1, wx.EXPAND)
 
-        # update M live when ν changes
         self.txt_nu.Bind(wx.EVT_TEXT, self._on_nu_changed)
 
-        col.Add(row4, 0, wx.ALL | wx.EXPAND, 4)
+        col.Add(row3, 0, wx.ALL | wx.EXPAND, 4)
+
+        # ---- Lat/Lon (angle as colat θ by default) ----
+        row4 = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.lbl_angle = wx.StaticText(self._in_inner, label=f"Lat ({deg}):")
+        row4.Add(self.lbl_angle, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+
+        self.txt_angle = wx.TextCtrl(self._in_inner, value="", size=(100, -1))
+        row4.Add(self.txt_angle, 0, wx.RIGHT, 12)
+
+        row4.Add(
+            wx.StaticText(self._in_inner, label=f"Lon ({deg}E):"),
+            0,
+            wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+            6
+        )
+
+        self.txt_lon = wx.TextCtrl(self._in_inner, value="", size=(100, -1))
+        row4.Add(self.txt_lon, 0)
+
+        col.Add(row4, 0, wx.ALL, 4)
 
 
         # ---- Action (Compute) ----
         row5 = wx.BoxSizer(wx.HORIZONTAL)
-        self.btn_compute = wx.Button(self._in_inner, label="Calculate Stress")
+        self.btn_compute = wx.Button(self._in_inner, label="Compute Stress")
         self.btn_compute.Bind(wx.EVT_BUTTON, self._on_compute_clicked)
         row5.Add(self.btn_compute, 0)
         col.Add(row5, 0, wx.ALL, 6)

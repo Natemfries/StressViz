@@ -50,11 +50,29 @@ class GettingStartedPanel(wx.Panel):
         vbox.Add(hdr, 0, wx.ALL | wx.ALIGN_CENTER, 10)
 
         # Body
-        html = wxhtml.HtmlWindow(self, style=wxhtml.HW_SCROLLBAR_AUTO)
-        html.SetPage(_HTML_BODY)
-        vbox.Add(html, 1, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        self._html_zoom = 1.0
+
+        self.html = wxhtml.HtmlWindow(self, style=wxhtml.HW_SCROLLBAR_AUTO)
+        self._render_html()
+        vbox.Add(self.html, 1, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
 
         # Buttons
+        zoom_row = wx.BoxSizer(wx.HORIZONTAL)
+        zoom_row.AddStretchSpacer(1)
+
+        btn_zoom_out = wx.Button(self, wx.ID_ANY, "Zoom Out")
+        btn_zoom_reset = wx.Button(self, wx.ID_ANY, "Reset")
+        btn_zoom_in = wx.Button(self, wx.ID_ANY, "Zoom In")
+
+        zoom_row.Add(btn_zoom_out, 0, wx.ALL, 4)
+        zoom_row.Add(btn_zoom_reset, 0, wx.ALL, 4)
+        zoom_row.Add(btn_zoom_in, 0, wx.ALL, 4)
+
+        self.Bind(wx.EVT_BUTTON, self._on_zoom_out, btn_zoom_out)
+        self.Bind(wx.EVT_BUTTON, self._on_zoom_reset, btn_zoom_reset)
+        self.Bind(wx.EVT_BUTTON, self._on_zoom_in, btn_zoom_in)
+
+        vbox.Add(zoom_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
         btn_row = wx.BoxSizer(wx.HORIZONTAL)
         btn_row.AddStretchSpacer(1)
 
@@ -74,6 +92,40 @@ class GettingStartedPanel(wx.Panel):
                 wx.LaunchDefaultBrowser(url)
             except Exception:
                 pass
+
+    def _render_html(self):
+        base_size = int(18 * self._html_zoom)
+
+        self.html.SetFonts(
+            normal_face="",
+            fixed_face="",
+            sizes=[
+                max(6, base_size - 4),
+                max(7, base_size - 2),
+                max(8, base_size),
+                max(10, base_size + 2),
+                max(12, base_size + 4),
+                max(14, base_size + 6),
+                max(16, base_size + 8),
+            ],
+        )
+
+        self.html.SetPage(_HTML_BODY)
+
+
+    def _on_zoom_in(self, _evt):
+        self._html_zoom = min(self._html_zoom + 0.1, 2.0)
+        self._render_html()
+
+
+    def _on_zoom_out(self, _evt):
+        self._html_zoom = max(self._html_zoom - 0.1, 0.7)
+        self._render_html()
+
+
+    def _on_zoom_reset(self, _evt):
+        self._html_zoom = 1.0
+        self._render_html()
 
 # -------------- Modeless guide window --------------
 class GettingStartedFrame(wx.Frame):
@@ -163,20 +215,41 @@ def maybe_show_getting_started(parent: wx.Window | None, docs_url: str | None = 
 # -------------- Static HTML content --------------
 _HTML_BODY = """
 <html>
-  <body style="font-family:-apple-system,Segoe UI,Arial; font-size: 12pt; line-height:1.35;">
-    <p>Follow this quick path to your first plot:</p>
+  <body style="font-family:-apple-system,Segoe UI,Arial; line-height:1.35;">
+    <p>StressViz initializes with the default Europa satellite parameters from /data/EuropaSample.sat.</p>
+    <p>To continue with Europa defaults:</p>
     <ol>
-      <li><b>Load Satellite Parameters</b> — Select “Europa Preset” or load a <code>.sat</code> file.</li>
+      <li><b>Go to the Plots tab.</b></li>
+      <li><b>Select Encounters</b> - Select desired subset of encounters from the dropdown menu. These will be displayed in the "Observation Events" panel.</li>
+      <li><b>Plot on Orbit</b> - Plot selected encounters on the Orbit Plot</li>
+      <li><b>Move Stress Plot</b> - Move the Stress Plot to match with the mean anomaly (M) of the top selected encounter. The Stress Plot marker on the Orbit Plot will also move to reflect this.</li>
+      <li><b>Show Nearby Events</b> - Searches for encounters within +/-10&deg M of the top selected encounter. This plots all on the Orbit Plot and adds them to he Observation Events panel.</li>
+    </ol>
+    <p>To manually input an encounter not in the internal database:</p>
+    <ol>
+      <li><b>Go to the Controls tab.</b></li>
+      <li><b>Select Encounter or Input Location/Time</b> - Option to load Clipper encounter from dropdown or manual input.</li>
+      <li><b>Enter Date-Time</b> - Enter the datetime in UTC (ISO) format (yyyy-mm-ddThh:mm:ssZ).</li>
+      <li><b>Resolve Orbital Phase<b> - Queries true anomaly of Europa at given date-time from JPL New Horizons and converts to mean anomaly (M) for use with SatStress code.</li>
+      <li><b>Enter Point Location</b> - Enter Lat/Lon for the desired point on Europa's surface. This is used to compute stress at that specific point. Arbitrary values may be used if this is not a priority.
+      <li><b>Compute Stress</b> - Compute the stress at the point of the inputted lat/lon and orbital position.</li>
+      <li><b>Plot</b> - Select <i>Plot</i> to push the manually inputted encounter to the Observation Events panel.</li>
+    </ol>
+    <p>To use satellite parameters other than the default Europa:</p>
+    <ol>
+      <li><b>Go to the Controls tab.</b></li>
+      <li><b>Load Satellite Parameters</b> — Select <i>Europa Preset</i> or load a <code>.sat</code> file. ***Load a file is currently not functional, but you may manually input desired values</li>
       <li><b>Compute Love Numbers</b> — or enter values manually.</li>
       <li><b>Select and load encounter</b> — or enter UTC manually and resolve true anomaly.</li>
       <li><b>Set Location</b> — Provide lat/lon if fields are empty.</li>
-      <li><b>Calculate Stress</b> — Compute stress at the specified location.</li>
+      <li><b>Compute Stress</b> — Compute stress at the specified location.</li>
       <li><b>Enter Grid/Orbit Ranges</b> — if you plan to sweep ν or map a region.</li>
       <li><b>Open Stress Map</b> or <b>Scalar Plot</b> — to visualize results.</li>
     </ol>
     <p><b>Tips</b>:</p>
     <ul>
-      <li>Use <i>Save Series</i> to export a sweep across ν values.</li>
+      <li>Use <i>Save Stress Series</i> to export a series of stress plots across the given range of ν values.</li>
+      <li>Use <i>Save Orbit Plot</i> to export the current Orbit plot.</li>
       <li>Help → Getting Started (or press <b>F1</b>) to reopen this guide.</li>
     </ul>
   </body>

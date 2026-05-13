@@ -24,7 +24,7 @@ python main.py
 - "Europa Preset"
 - "Compute Love Numbers"
 - "Select Encounter"
-- "Calculate Stress"
+- "Compute Stress"
 - "Plot" Europa 
 
 #Known Issues

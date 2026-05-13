@@ -3475,7 +3475,7 @@ def get_or_create_scalar_popup(
     try:
         notebook = getattr(parent, "notebook", None)
         if notebook is not None:
-            notebook.SetSelection(1)
+            notebook.SetSelection(2)
     except Exception:
         pass
 

@@ -232,7 +232,7 @@ EUROPA_DEFAULT_DTO = {
 class SatellitePanelLite(wx.Panel):
     """
     SatStress-style satellite tab (no dependency on satstressgui):
-      - Load from file button (uses your satstress_interface)
+      - Load from file button (uses the satstress_interface)
       - Save to file button (present but disabled)
       - Global params: System ID, Planet Mass [kg], Orbit Eccentricity,
                        Orbit Semimajor Axis [m], NSR Period [yrs]
@@ -261,6 +261,7 @@ class SatellitePanelLite(wx.Panel):
         top_row = wx.BoxSizer(wx.HORIZONTAL)
         self.btn_load_file = wx.Button(self, label=u"Load from file")
         self.btn_save_file = wx.Button(self, label=u"Save to file")
+        self.btn_load_file.Enable(False) #disabled for now, method is broken
         self.btn_save_file.Enable(False)  # present but disabled for now
         top_row.Add(self.btn_load_file, 1, wx.ALL | wx.EXPAND, 3)
         top_row.Add(self.btn_save_file, 1, wx.ALL | wx.EXPAND, 3)
