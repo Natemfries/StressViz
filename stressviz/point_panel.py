@@ -578,7 +578,27 @@ class PointStressPanel(wx.Panel):
     def _on_nu_changed(self, _evt):
         self._update_M_from_nu()
 
+    def get_manual_datetime_encounter(self):
+        utc_iso = self.txt_utc.GetValue().strip()  # change to actual textbox name
 
+        if not utc_iso:
+            return None
+
+        try:
+            M = float(self.txt_M.GetValue().strip()) % 360.0
+        except Exception:
+            return None
+
+        eid = utc_iso
+
+        return {
+            "id": eid,
+            "enc_id": eid,
+            "label": utc_iso,
+            "encounter": utc_iso,
+            "utc_iso": utc_iso,
+            "mean_anom_deg": M,
+        }
 
     # ---------- Compute click ----------
     def _on_compute_clicked(self, _evt):

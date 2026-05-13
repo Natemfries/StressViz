@@ -1126,197 +1126,177 @@ class AnalysisControlPanel(ScrolledPanel):
 
         print("[autoload] ===== done _auto_load_default_encounters =====\n")
 
+    def cache_manual_datetime_encounter(
+        self,
+        utc_iso: str,
+        mean_anom_deg: float,
+        true_anom_deg: float | None = None,
+    ):
+        """
+        Cache a manually entered date-time as an encounter only after
+        orbital position has successfully resolved.
+        """
+        if not hasattr(self, "encounters_by_id") or self.encounters_by_id is None:
+            self.encounters_by_id = {}
 
-    def _push_encounters_to_scalar_panel(self, select_id=None):
-        """Send current encounters to the ScalarPlotPanel dropdown (GUI thread-safe),
-        with verbose debug + hard defaults so M_ca/period/utc are never None."""
-        
-
-        def _dbg(msg, *a):
-            print("[StressViz/_push_encounters] " + (msg % a if a else msg))
+        utc_iso = str(utc_iso).strip()
+        if not utc_iso:
+            return None
 
         try:
-            sp = getattr(self, "scalar_panel_ref", None)
-            if not sp:
-                self._pending_push_to_scalar = True
-                self._pending_scalar_select_id = select_id
-                _dbg("No scalar_panel_ref; deferring push until scalar panel is created.")
-                return
-            
-            self._pending_push_to_scalar = False
-            self._pending_scalar_select_id = None
-            
-            if not getattr(self, "encounters_by_id", None):
-                _dbg("No encounters_by_id on controller; aborting.")
-                return
+            M = float(mean_anom_deg) % 360.0
+        except Exception:
+            return None
 
-            def _parse_iso_z(s):
-                if not s:
-                    return None
-                s = str(s).strip()
-                if s.endswith("Z"):
-                    s = s[:-1]
-                try:
-                    return _dt.datetime.fromisoformat(s).replace(tzinfo=_dt.timezone.utc)
-                except Exception:
-                    return None
-
-            # Eccentricity for ν→M fallback
+        nu = None
+        if true_anom_deg is not None:
             try:
-                e = float(sp._get_eccentricity()) if hasattr(sp, "_get_eccentricity") else 0.0
+                nu = float(true_anom_deg) % 360.0
             except Exception:
-                e = 0.0
+                nu = None
 
-            # Robust default period (controller -> panel -> hardcoded)
-            P_H_DEFAULT = (
-                getattr(self, "period_hours", None)
-                or getattr(sp, "period_hours", None)
-                or 85.228  # Europa default (hours)
+        eid = f"manual-{utc_iso}".replace(":", "").replace(" ", "T")
+        label = f"Manual {utc_iso}  |  M={M:.2f}°"
+
+        rec = {
+            "id": eid,
+            "enc_id": eid,
+            "label": label,
+            "encounter": label,
+            "utc_iso": utc_iso,
+            "mean_anom_deg": M,
+            "true_anom_deg": nu,
+            "phase_src": "manual_datetime",
+        }
+
+        self.encounters_by_id[eid] = rec
+
+        self._push_encounters_to_scalar_panel(select_id=eid)
+
+        return rec
+
+    def _push_encounters_to_scalar_panel(self, select_id=None):
+        """
+        Push controller-level encounters into ScalarPlotPanel.
+
+        Intended behavior:
+        - Use self.encounters_by_id as the source of truth.
+        - Do NOT invent/resolve orbital positions here.
+        - Manual date-time encounters should already have mean_anom_deg
+        before this method is called.
+        - If select_id is provided, add that encounter to the plotted rows
+        and mark it enabled/checked.
+        """
+        try:
+            sp = (
+                getattr(self, "scalar_panel_ref", None)
+                or getattr(self, "scalar_panel", None)
             )
 
-            # Hard default CA time if missing
-            UTC_DEFAULT = _dt.datetime(2000, 1, 1, tzinfo=_dt.timezone.utc)
+            if sp is None:
+                self._pending_push_to_scalar = True
+                self._pending_scalar_select_id = select_id
+                return
 
-            ids = sorted(self.encounters_by_id.keys(), key=str)
-            _dbg("Preparing %d encounters; e=%.6g, default P_h=%.6g", len(ids), e, P_H_DEFAULT)
+            self._pending_push_to_scalar = False
+            self._pending_scalar_select_id = None
 
-            meta_by_id = {}
-            for eid in ids:
-                rec = self.encounters_by_id.get(eid) or {}
+            encounters_by_id = getattr(self, "encounters_by_id", None)
+            if not encounters_by_id:
+                return
 
-                # ---- CA time ----
-                utc_ca = rec.get("utc_dt") or _parse_iso_z(rec.get("utc_iso") or rec.get("utc")) or UTC_DEFAULT
+            encs = []
 
-                # ---- Mean anomaly at CA ----
-                M_ca = rec.get("mean_anom_deg")
-                if M_ca is None:
-                    # 1) Try ν stored on the record (normal Clipper path)
-                    nu = rec.get("true_anom_deg") or rec.get("nu_deg")
-                    if nu is not None:
-                        try:
-                            M_ca = float(_true2mean(float(nu), float(e))) % 360.0
-                        except Exception:
-                            _dbg("eid=%s: ν→M conversion failed (nu=%r, e=%r)", eid, nu, e)
-                            M_ca = None
+            for eid, rec in encounters_by_id.items():
+                if not isinstance(rec, dict):
+                    continue
 
-                # 2) If we STILL don't have M, try resolving ν from the UTC time (plume path)
-                if M_ca is None and utc_ca is not None:
-                    resolver = getattr(self, "_resolve_nu_from_time", None)
-                    if callable(resolver):
-                        try:
-                            # Make a clean UTC string, like the Point panel passes to resolve_nu_from_time
-                            if isinstance(utc_ca, _dt.datetime):
-                                utc_str = utc_ca.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
-                            else:
-                                utc_str = str(utc_ca)
+                enc = rec.copy()
 
-                            nu_res = resolver(utc_str, is_et=False)
-                            if nu_res is not None:
-                                nu_f = float(nu_res) % 360.0
-                                try:
-                                    M_ca = float(_true2mean(nu_f, float(e))) % 360.0
-                                except Exception:
-                                    # If ν→M fails for some reason, just approximate M ≈ ν
-                                    M_ca = nu_f
-                                _dbg("eid=%s: resolved ν from time: nu=%.6f → M=%.6f",
-                                    eid, nu_f, M_ca)
-                        except Exception as err:
-                            _dbg("eid=%s: time-based ν resolve failed: %r", eid, err)
-
-                # 3) Normalize M if we have it
-                if M_ca is not None:
-                    try:
-                        M_ca = float(M_ca) % 360.0
-                    except Exception:
-                        _dbg("eid=%s: mean_anom_deg not floaty: %r", eid, M_ca)
-                        M_ca = None
-
-                # 4) Final hard default so the panel never sees None
-                if M_ca is None:
-                    M_ca = 0.0
-
-                # ---- Back-propagate M_ca into encounters_by_id so other code can use it ----
-                base_rec = self.encounters_by_id.get(eid)
-                if isinstance(base_rec, dict):
-                    # Make a shallow copy so we don't accidentally share references
-                    base_rec = base_rec.copy()
-
-                    # Preserve any ν we already had
-                    if base_rec.get("true_anom_deg") is None and base_rec.get("nu_deg") is not None:
-                        base_rec["true_anom_deg"] = base_rec["nu_deg"]
-
-                    base_rec["mean_anom_deg"] = M_ca
-                    self.encounters_by_id[eid] = base_rec
-
-
-                # ---- Period hours ----
-                P_h = rec.get("period_hours", P_H_DEFAULT)
-                try:
-                    P_h = float(P_h)
-                    if not (P_h > 0):
-                        raise ValueError("non-positive period")
-                except Exception:
-                    _dbg("eid=%s: invalid period_hours=%r; using default %.6g", eid, P_h, P_H_DEFAULT)
-                    P_h = float(P_H_DEFAULT)
-
-                meta_by_id[eid] = {
-                    "utc_ca": utc_ca,
-                    "M_ca_deg": M_ca,
-                    "period_hours": P_h,
-                }
-
-                _dbg(
-                    "eid=%s -> utc_ca=%s | M_ca_deg=%.6f | period_hours=%.6f",
-                    eid,
-                    utc_ca.isoformat() if isinstance(utc_ca, _dt.datetime) else str(utc_ca),
-                    float(M_ca),
-                    float(P_h),
+                enc_id = str(
+                    enc.get("enc_id")
+                    or enc.get("id")
+                    or eid
                 )
 
-            # Register (GUI thread)
-            if hasattr(sp, "register_encounters"):
-                wx.CallAfter(sp.register_encounters, meta_by_id)
-            else:
-                _dbg("Scalar panel missing register_encounters; cannot set M_ca/period metadata.")
+                enc["id"] = enc_id
+                enc["enc_id"] = enc_id
 
-            # Then wire the list/selection API
-            if hasattr(sp, "set_encounters_from_ids"):
-                wx.CallAfter(
-                    sp.set_encounters_from_ids,
-                    ids,
-                    lambda eid: self.encounters_by_id.get(eid),
-                    lambda eid, rec: str(eid),
-                    select_id,
+                # Keep labels simple. Manual date-time encounters can define
+                # their own label before being cached.
+                label = (
+                    enc.get("label")
+                    or enc.get("encounter")
+                    or enc.get("utc_iso")
+                    or enc_id
                 )
-            else:
-                encs = []
-                for eid in ids:
-                    rec = (self.encounters_by_id.get(eid) or {}).copy()
-                    encs.append({
-                        "id": eid,
-                        "name": str(eid),
-                        "nu_deg": rec.get("nu_deg") or rec.get("true_anom_deg"),
-                        "M_deg": rec.get("mean_anom_deg"),
-                        "utc_iso": rec.get("utc_iso") or rec.get("utc"),
-                        "lat_deg": rec.get("lat_deg") or rec.get("lat"),
-                        "lon_deg": rec.get("lon_deg") or rec.get("lon"),
-                    })
-                wx.CallAfter(sp.set_encounters, encs, select_id)
 
-            # Optional confirmation ping (async)
-            def _after_register_ping():
-                try:
-                    cur = getattr(sp, "_selected_encounter_id", None)
-                    if cur:
-                        m = getattr(sp, "_enc_meta_by_id", {}).get(cur, {})
-                        _dbg("ScalarPanel accepted id=%s: M_ca_deg=%r, P_h=%r, utc_ca=%r",
-                            cur, m.get("M_ca_deg"), m.get("period_hours"), m.get("utc_ca"))
-                except Exception:
-                    traceback.print_exc()
+                enc["label"] = str(label)
+                enc["encounter"] = str(label)
 
-            wx.CallAfter(_after_register_ping)
+                encs.append(enc)
+
+            if not encs:
+                return
+
+            # Replace scalar panel encounter source.
+            sp._encounters = encs
+
+            if hasattr(sp, "_ensure_multi_enc_state"):
+                sp._ensure_multi_enc_state()
+
+            # If requested, add/select/check this encounter row.
+            if select_id is not None:
+                sid = str(select_id)
+
+                if not hasattr(sp, "_selected_encounter_ids"):
+                    sp._selected_encounter_ids = []
+
+                if not hasattr(sp, "_selected_enabled_by_id"):
+                    sp._selected_enabled_by_id = {}
+
+                if not hasattr(sp, "_enc_display_by_id"):
+                    sp._enc_display_by_id = {}
+
+                if sid not in sp._selected_encounter_ids:
+                    sp._selected_encounter_ids.append(sid)
+
+                sp._selected_enabled_by_id[sid] = True
+
+                selected_enc = None
+                for enc in encs:
+                    if str(enc.get("enc_id") or enc.get("id")) == sid:
+                        selected_enc = enc
+                        break
+
+                if selected_enc is not None:
+                    if hasattr(sp, "_enc_display_label"):
+                        sp._enc_display_by_id[sid] = sp._enc_display_label(selected_enc)
+                    else:
+                        sp._enc_display_by_id[sid] = str(
+                            selected_enc.get("label")
+                            or selected_enc.get("encounter")
+                            or sid
+                        )
+
+            # Rebuild visible encounter rows.
+            if hasattr(sp, "_sync_rows_from_model"):
+                sp._sync_rows_from_model()
+
+            # Optional redraw hooks, safe if absent.
+            if hasattr(sp, "_plot_selected_encounters_on_orbit"):
+                sp._plot_selected_encounters_on_orbit()
+
+            if hasattr(sp, "_update_orbit_side_legend"):
+                sp._update_orbit_side_legend()
+
+            try:
+                sp.Layout()
+            except Exception:
+                pass
 
         except Exception:
+            import traceback
             traceback.print_exc()
 
 
@@ -1447,52 +1427,94 @@ class AnalysisControlPanel(ScrolledPanel):
                         "StressViz map", wx.OK | wx.ICON_ERROR)
             return
 
-
         # ---------- read range inputs ----------
         def _f(ctrl, default):
-            try: return float(ctrl.GetValue())
-            except Exception: return float(default)
+            try:
+                return float(ctrl.GetValue())
+            except Exception:
+                return float(default)
 
         def _i(ctrl, default):
-            try: return int(ctrl.GetValue())
-            except Exception: return int(default)
+            try:
+                return int(ctrl.GetValue())
+            except Exception:
+                return int(default)
 
         lat_min = _f(self.txt_lat_min, -90.0)
         lat_max = _f(self.txt_lat_max,  90.0)
-        if lat_min > lat_max: lat_min, lat_max = lat_max, lat_min
-        lat_min = max(-90.0, min( 90.0, lat_min))
-        lat_max = max(-90.0, min( 90.0, lat_max))
+        if lat_min > lat_max:
+            lat_min, lat_max = lat_max, lat_min
+        lat_min = max(-90.0, min(90.0, lat_min))
+        lat_max = max(-90.0, min(90.0, lat_max))
 
         lon_min = _f(self.txt_lon_min, -180.0)
         lon_max = _f(self.txt_lon_max,  180.0)
-        if lon_min > lon_max: lon_min, lon_max = lon_max, lon_min
-        lon_min = max(-180.0, min( 180.0, lon_min))
-        lon_max = max(-180.0, min( 180.0, lon_max))
+        if lon_min > lon_max:
+            lon_min, lon_max = lon_max, lon_min
+        lon_min = max(-180.0, min(180.0, lon_min))
+        lon_max = max(-180.0, min(180.0, lon_max))
 
-        nu_min  = _f(self.txt_nu_min, 0.0)
-        nu_max  = _f(self.txt_nu_max, 360.0)
-        if nu_min > nu_max: nu_min, nu_max = nu_max, nu_min
-        n_nu    = max(2, _i(self.sp_nu_n, 10))
+        nu_min = _f(self.txt_nu_min, 0.0)
+        nu_max = _f(self.txt_nu_max, 360.0)
+        if nu_min > nu_max:
+            nu_min, nu_max = nu_max, nu_min
 
+        n_nu = max(2, _i(self.sp_nu_n, 10))
         nlat_vec = max(2, _i(self.sp_lat_n, 10))
         nlon_vec = max(2, _i(self.sp_lon_n, 10))
 
         N_LAT = 91
         N_LON = 181
-        lats  = np.linspace(lat_min, lat_max, N_LAT)
-        lons  = np.linspace(lon_min, lon_max, N_LON)
-        nus   = np.linspace(nu_min,  nu_max,  n_nu)
+        lats = np.linspace(lat_min, lat_max, N_LAT)
+        lons = np.linspace(lon_min, lon_max, N_LON)
+        nus = np.linspace(nu_min, nu_max, n_nu)
 
         # ---------- build / show panel ----------
-        panel = get_or_create_scalar_popup(self)  # parent = control panel
-        self._push_encounters_to_scalar_panel(
-            select_id=getattr(self, "get_selected_encounter_id", lambda: None)()
-        )
+        panel = get_or_create_scalar_popup(self)
+
+        # ---------- cache manual datetime encounter, if present ----------
+        select_id = None
+
+        try:
+            pp = getattr(self, "point_panel", None)
+
+            if pp is not None and hasattr(pp, "get_manual_datetime_encounter"):
+                enc = pp.get_manual_datetime_encounter()
+
+                if enc is not None:
+                    if not hasattr(self, "encounters_by_id") or self.encounters_by_id is None:
+                        self.encounters_by_id = {}
+
+                    eid = str(enc.get("enc_id") or enc.get("id"))
+                    enc["id"] = eid
+                    enc["enc_id"] = eid
+
+                    self.encounters_by_id[eid] = enc
+                    select_id = eid
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            select_id = None
+
+        # If no manual datetime encounter was found, preserve old selected encounter behavior.
+        if select_id is None:
+            try:
+                select_id = getattr(self, "get_selected_encounter_id", lambda: None)()
+            except Exception:
+                select_id = None
+
+        self._push_encounters_to_scalar_panel(select_id=select_id)
+
         # Hand getters so Save-series can name "<SystemID>_<EncounterID>"
-        try: panel._get_system_id = self.sat_panel.get_system_id
-        except Exception: panel._get_system_id = lambda: "System"
-        try: panel._get_encounter_id = self.point_panel.get_selected_encounter_id
-        except Exception: panel._get_encounter_id = lambda: None
+        try:
+            panel._get_system_id = self.sat_panel.get_system_id
+        except Exception:
+            panel._get_system_id = lambda: "System"
+
+        try:
+            panel._get_encounter_id = self.point_panel.get_selected_encounter_id
+        except Exception:
+            panel._get_encounter_id = lambda: None
 
         try:
             panel.set_fixed_stress_range_kpa(-100.0, 100.0)
@@ -1516,38 +1538,51 @@ class AnalysisControlPanel(ScrolledPanel):
                     try:
                         val = float(getattr(diurn, key))
                         if np.isfinite(val) and val != 0.0:
-                            omega = val; break
+                            omega = val
+                            break
                     except Exception:
                         pass
+
             if omega is None:
                 raise RuntimeError("Diurnal has no valid mean motion (omega/n/mean_motion).")
 
             thetas = np.radians(90.0 - lats)
-            phis   = np.mod(np.radians(lons), 2.0 * np.pi)
+            phis = np.mod(np.radians(lons), 2.0 * np.pi)
 
             StressCalc = _import_stresscalc()
 
             def eval_fn(nu_deg: float):
                 import numpy as _np
+
                 t_sec = (_np.radians(float(nu_deg)) % (2.0 * np.pi)) / omega
 
                 holder = getattr(diurn, "stresses", diurn)
+
                 def _set(k, v):
                     if hasattr(holder, k):
-                        try: setattr(holder, k, bool(v))
-                        except Exception: pass
-                _set("eccentricity", True); _set("ecc", True)
-                _set("diurnal", True); _set("tidal", True)
-                _set("nsr", False); _set("non_synchronous_rotation", False)
-                _set("polar_wander", False); _set("pw", False)
+                        try:
+                            setattr(holder, k, bool(v))
+                        except Exception:
+                            pass
+
+                _set("eccentricity", True)
+                _set("ecc", True)
+                _set("diurnal", True)
+                _set("tidal", True)
+                _set("nsr", False)
+                _set("non_synchronous_rotation", False)
+                _set("polar_wander", False)
+                _set("pw", False)
                 _set("obliquity", False)
 
                 calc = StressCalc([diurn])
 
-                Ny = thetas.size; Nx = phis.size
+                Ny = thetas.size
+                Nx = phis.size
                 Ttt = _np.empty((Ny, Nx), float)
                 Tpt = _np.empty((Ny, Nx), float)
                 Tpp = _np.empty((Ny, Nx), float)
+
                 for i in range(Ny):
                     th = float(thetas[i])
                     for j in range(Nx):
@@ -1556,18 +1591,21 @@ class AnalysisControlPanel(ScrolledPanel):
                         Ttt[i, j] = float(_np.asarray(a).reshape(()))
                         Tpt[i, j] = float(_np.asarray(b).reshape(()))
                         Tpp[i, j] = float(_np.asarray(c).reshape(()))
+
                 return Ttt, Tpt, Tpp
 
-            # initial ν
+            # Initial ν for the stress plot itself.
             nu0 = None
             try:
                 if hasattr(self, "_last_point_inputs"):
                     nu0 = self._last_point_inputs.get("nu")
+
                 if nu0 is None and hasattr(self.point_panel, "txt_nu"):
                     s = self.point_panel.txt_nu.GetValue().strip()
                     nu0 = float(s) if s else None
             except Exception:
                 nu0 = None
+
             if nu0 is not None:
                 nu0 = float(np.clip(nu0, nu_min, nu_max))
 
@@ -1583,7 +1621,7 @@ class AnalysisControlPanel(ScrolledPanel):
             wx.MessageBox(f"Failed to initialize map:\n{e}",
                         "StressViz map", wx.OK | wx.ICON_ERROR)
             try:
-                frame.Destroy()
+                panel.Destroy()
             except Exception:
                 pass
 

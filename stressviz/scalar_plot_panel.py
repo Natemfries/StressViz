@@ -1422,6 +1422,14 @@ class ScalarPlotPanel(wx.Panel):
             return "s"
         if "keck" in txt:
             return "*"
+        if "galileo" in txt:
+            return "v"
+        if "jwst" in txt:
+            return "p"
+        if "subaru" in txt:
+            return "D"
+        if "sofia" in txt:
+            return "X"
 
         # fallback
         return "o"
@@ -2284,10 +2292,19 @@ class ScalarPlotPanel(wx.Panel):
         symbol_map = {
             "o": "●",
             "^": "▲",
+            "v": "▼",
             "s": "■",
+            "D": "◆",
+            "d": "◇",
             "*": "★",
-            "+": "+",
-            "x": "×",
+            "+": "✚",
+            "x": "✕",
+            "X": "✖",
+            "p": "⬟",
+            "h": "⬢",
+            "H": "⬣",
+            "<": "◀",
+            ">": "▶",
         }
 
         for item in secondary:

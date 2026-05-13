@@ -21,35 +21,70 @@ Then run:
 python main.py
 
 #Quick Run
-- "Europa Preset"
-- "Compute Love Numbers"
-- "Select Encounter"
-- "Compute Stress"
-- "Plot" Europa 
+- Select an encounter from the dropdown menu.
+- "Plot on Orbit"
+- "Move Stress Plot" 
 
 #Known Issues
 - Conda may attempt to use the default Anaconda channel and hit rate limits. Ensure `conda-forge` is used with strict priority.
 - wxPython installation may fail outside of Conda environments.
-- "Load from file" button to input satellite parameters doesn't work. Bypass this with the "Europa Preset" button.
+- "Load from file" button to input satellite parameters doesn't work. Bypass this with the "Europa Preset" button or input parameters manually.
 - Colorbar range for stress plots doesn't update when bounds are changed.
 
-#Encounters
-Includes pre-loaded planned Europa Clipper and JUICE encounters, as well as past plume search observations. Metadata for these encounters is in data/plume_observations.txt, data/JUICE_Europa_flybys.txt, and data/Europa_Encounters_21F31_V7_LP01_ver2.txt. 
 
-Encounters are noted as positive (Y), negative (N), or contested (*) plume findings based on the following references. Contested findings were initially reported as positive detections, and then were later reported as negative detections in a separate paper. Full references for each observation can be found in Europa_Plume_Observations.xslx.
-Positive/Contested Detections:
-- HST 2012-12-30T18:49:00Z - Initially reported as a positive detection according to Roth et al. (2014), but has been updated to a negative detection in Roth et al., (2026).
-- HST 2014-01-26T18:05:00Z HST 2014-03-17T11:47:00Z, HST 2014-04-04T05:20:00Z, and HST 2016-02-22T00:00:00Z - All reported as positive detections in Sparks et al. (2016,2017), but were subsequently refuted by Giono et al., (2020).
-- Keck 2016-04-26T05:32:00Z - Reported as a positive detection in Paganini et al., (2019).
-- Galileo 1997-12-16T12:00:59Z - Reported as a positive detection in Jia et al., (2018).
-- Subaru 2021-07-17T10:21:00Z - Reported as a positive detection in Kimura et al., (2024).
+#Plots Tab:
+    #Observation Events Panel:
+    Includes pre-loaded planned Europa Clipper and JUICE encounters, as well as past plume search observations. Metadata for these encounters is in data/plume_observations.txt, data/JUICE_Europa_flybys.txt, and data/Europa_Encounters_21F31_V7_LP01_ver2.txt. 
 
-#Stress Plots
-The stress plots show the evolution of the diurnal stress map throughout one orbit. They are generated using SatStressGUIV6.0. 
+    Encounters are classified as positive (Y), negative (N), or contested (*) plume findings based on the following references. Contested findings were initially reported as positive detections, and were later reported as negative detections in a separate paper. By default, contested findings remain classified based on their original report with the addition of an (*). An exception is HST 2010-12-30, which was originally positive (Roth et al., 2014), and was contested by the original author (Roth et al., 2026).Full references for each observation can be found in Europa_Plume_Observations.xslx.
+    Positive/Contested Detections:
+    - HST 2012-12-30T18:49:00Z - Initially reported as a positive detection according to Roth et al. (2014), but has been updated to a negative detection in Roth et al., (2026).
+    - HST 2014-01-26T18:05:00Z HST 2014-03-17T11:47:00Z, HST 2014-04-04T05:20:00Z, and HST 2016-02-22T00:00:00Z - All reported as positive detections in Sparks et al. (2016,2017), but were subsequently refuted by Giono et al., (2020).
+    - Keck 2016-04-26T05:32:00Z - Reported as a positive detection in Paganini et al., (2019).
+    - Galileo 1997-12-16T12:00:59Z - Reported as a positive detection in Jia et al., (2018).
+    - Subaru 2021-07-17T10:21:00Z - Reported as a positive detection in Kimura et al., (2024).
 
+    Events can be selected from the internal database, as well as manually entered (see Point Panel). Selected events are shown in the panel. The color markers are generated randomly and are customizable.
 
-#Orbital Position Plots
-Orbital plots show the mean anomaly of Europa at the time of a given encounter, which can then be matched to the corresponding stress plot. 
+    #Stress Plot:
+    The stress plots show the evolution of the diurnal stress map throughout one orbit (default). They are generated using SatStressGUIV6.0. The base color indicates he magnitude of stress (colorbar on the right). The overlying lines indicate the direction and relative magnitude of the stress vectors.
+
+    #Orbital Position Plot:
+    Orbital plots show the mean anomaly of Europa at the time of a given encounter, which can then be matched to the corresponding stress plot. Periapsis corresponds to O°. This plot is controlled by the Observation Events panel, which indicates which encounters to plot (see Observation Events Panel).
+
+    In addition to the customizable color markers for each selected encounter, each observer has a unique marker shape:
+    - Clipper: Circle
+    - Galileo: Downward Triangle
+    - HST: Square
+    - JUICE: Triangle
+    - JWST: Pentagon
+    - Keck: Star
+    - SOFIA: X
+    - Subaru: Diamond
+    - Stress Plot Marker: Plus
+
+#Controls Tab
+    #Satellite Panel:
+    Loads parameters for Europa by default (can be found in /data/EuropaSample.sat). The user can input alternate parameters manually. EuropaSample.sat is duplicated from the satellite file in SatStressGUI V5.0.
+
+    #Love Number Panel:
+    Compute love numbers based on the satellite parameters. This computation is runs SatStress and more information about this computation can be found in the SatStress documentation (https://github.com/SatStressGUI/SatStressGUI).
+
+    #Point Panel:
+    This is where the user can indicate a point on the surface of a satellite to compute the stress for. This can be done by either:
+    - Selecting a preloaded Clipper encounter from the dropdown.
+    - Manually entering a date-time in UTC-ISO format (e.g. 2025-08-29T17:00:00Z)
+    Then resolve the orbital phase. This uses the date-time and queries the JPL New Horizons database to get the true anomaly of Europa at that point in time. Finally, enter the lat/lon of the desired point on the surface.
+
+    #Results Panel:
+    This panel displays the computed surface stress at the specified date/time/lat/lon. Like the love numbers, this calculation also runs SatStress, so more information can be found there.
+
+    #Grid/Orbit Ranges Panel:
+    Set the lat/lon and orbit ranges, as well as the number of grid points for the stress plot. The default values are:
+    - Latitude: -90 to 90
+    - Longitude: -180 to 180
+    - Orbital Position: 0 to 360
+    - Grid Points/Increments: 10 for each category
 
 
 #Credits
