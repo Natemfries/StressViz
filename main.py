@@ -31,7 +31,7 @@ except Exception:
 
 class StressVizFrame(wx.Frame):
     def __init__(self):
-        super().__init__(None, title="StressViz", size=(1450, 1050))
+        super().__init__(None, title="StressViz", size=(1250, 900))
 
         self.notebook = wx.Notebook(self)
 

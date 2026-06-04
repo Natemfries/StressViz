@@ -1,5 +1,22 @@
 #About
-StressViz is a Python 3–compatible extension of the SatStressGUI program, which models tidal stresses in icy satellites. It integrates orbital position plotting with SatStress tidal stress calculations, providing a tool to analyze stress environments in support of Europa Clipper plume detections. StressViz is being developed for Europa, but could also be applied to other icy satellites that are compatible with SatStress. StressViz is being developed at the Jet Propulsion Laboratory, California Institute of Technology.
+This package contains the code for StressViz, a Python 3–compatible extension of the SatStressGUI program, which models tidal stresses in icy satellites. It integrates orbital position plotting with SatStress tidal stress calculations, providing a tool to analyze stress environments in support of Europa Clipper plume search. StressViz is being developed for Europa, but could also be applied to other icy satellites that are compatible with SatStress. 
+
+StressViz has been developed by Nathan Friesenhahn and Robert Pappalardo. 
+
+To suggest improvements or report bugs, please go to https://github.com/natemfries/StressViz/issues.
+
+For more information, please contact nathan.friesenhahn@colorado.edu.
+
+StressViz was developed at the Jet Propulsion Laboratory, California Institute of Technology for the Europa Clipper mission. 
+StressViz is based on SatStressGUI and falls under the licensing of SatStressGUI:
+
+ALL RIGHTS RESERVED. United States Government Sponsorship acknowledged. Any 
+commercial use must be negotiated with the Office of Technology Transfer at the California Institute of Technology.
+This software may be subject to U.S. export control laws and regulations.
+By accepting this document, the user agrees to comply with all applicable 
+U.S. export laws and regulations. User has the responsibility to obtain export
+licenses, or other export authority as may be required before exporting such
+information to foreign countries or providing access to foreign persons.
 
 
 #Installation

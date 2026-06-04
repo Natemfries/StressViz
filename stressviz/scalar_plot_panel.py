@@ -1619,6 +1619,39 @@ class ScalarPlotPanel(wx.Panel):
             self._enc_display_by_id[eid] = label
 
             M = self._M_for_encounter(enc)
+
+            # Manual datetime row fallback:
+            # If the row ID/label exactly matches the current point-panel datetime,
+            # use the point-panel M textbox directly.
+            if M is None or not np.isfinite(M):
+                try:
+                    pp = getattr(self, "point_panel", None)
+
+                    if pp is None:
+                        parent = self.GetParent()
+                        while parent is not None and pp is None:
+                            pp = getattr(parent, "point_panel", None)
+                            parent = parent.GetParent()
+
+                    if pp is not None:
+                        # Replace txt_datetime with your actual datetime textbox name.
+                        manual_utc = pp.txt_datetime.GetValue().strip()
+                        row_id = str(eid).strip()
+                        row_label = str(label).strip()
+
+                        if manual_utc and (row_id == manual_utc or row_label == manual_utc):
+                            M = float(pp.txt_M.GetValue().strip()) % 360.0
+
+                            # Cache onto this local dict so future logic sees it.
+                            if isinstance(enc, dict):
+                                enc["mean_anom_deg"] = M
+                                enc["M_deg"] = M
+                                enc["utc_iso"] = manual_utc
+                                enc["label"] = manual_utc
+                                enc["encounter"] = manual_utc
+                except Exception:
+                    pass
+
             if M is None or not np.isfinite(M):
                 failed.append(label)
                 continue
