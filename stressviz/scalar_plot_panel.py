@@ -142,13 +142,10 @@ class ScalarPlotPanel(wx.Panel):
         self._principal_artists = []
         self._vec_max_deg = 10.0   # longest half-length ~10°
 
-        # Vector scaling: 100 kPa → this many degrees of total line length
-        self._vec_ref_kpa = 100.0
-        self._vec_len_for_ref_deg = 18.0   # total length at 100 kPa (so half-length = 4°)
+        # Vector scaling
+        self._vec_ref_kpa = 10.0          # scale bar value/label
+        self._vec_scale_ref_kpa = 100.0   # actual vector normalization stays old
 
-        # Vector magnitude scaling (shared with the reference bar)
-        self._ref_kpa = 100.0
-        self._vec_scale_deg_per_100kpa = 20.0
         self._legend_art = []
 
         # Encounters UI/state
@@ -176,6 +173,7 @@ class ScalarPlotPanel(wx.Panel):
 
 
         self._build_ui()
+        self._update_satellite_label()
 
         # --- Return-to-Encounter gating state ---
         self._current_M_deg: float | None = None
@@ -207,6 +205,20 @@ class ScalarPlotPanel(wx.Panel):
                 label="Tension positive (kPa). Use M slider to scrub orbit; Save series exports one PNG per step.",
             ),
             0, wx.ALL | wx.EXPAND, 6,
+        )
+
+        # Satellite name
+        self.lbl_satellite = wx.StaticText(self, label="")
+        font = self.lbl_satellite.GetFont()
+        font.MakeBold()
+        font.SetPointSize(font.GetPointSize() + 2)
+        self.lbl_satellite.SetFont(font)
+
+        outer.Add(
+            self.lbl_satellite,
+            0,
+            wx.LEFT | wx.RIGHT | wx.BOTTOM,
+            6,
         )
 
         main = wx.BoxSizer(wx.HORIZONTAL)
@@ -312,6 +324,7 @@ class ScalarPlotPanel(wx.Panel):
         btn_row.Add(self.btn_save_series, 0, wx.TOP, 4)
         btn_row.AddSpacer(8)
         btn_row.Add(self.btn_save_orbit, 0, wx.TOP, 4)
+        btn_row.Add(self.btn_save_snap, 0, wx.TOP, 4)
 
         ctl.Add(btn_row, 0, wx.ALIGN_LEFT)
 
@@ -624,6 +637,30 @@ class ScalarPlotPanel(wx.Panel):
         """Smallest absolute difference on a circle (deg)."""
         d = (a - b + 180.0) % 360.0 - 180.0
         return abs(d)
+
+    def _display_satellite_name(self) -> str:
+        try:
+            system_id = str(self._get_system_id() or "").strip()
+        except Exception:
+            system_id = ""
+
+        for prefix in (
+            "Jupiter",
+            "Saturn",
+            "Uranus",
+            "Neptune",
+            "Earth",
+            "Mars",
+        ):
+            if system_id.startswith(prefix):
+                name = system_id[len(prefix):]
+                return name if name else system_id
+
+        return system_id or "Unknown"
+    
+    def _update_satellite_label(self):
+        if hasattr(self, "lbl_satellite"):
+            self.lbl_satellite.SetLabel(self._display_satellite_name())
 
     def _update_return_button_state(self):
         """Enable/disable 'Return to Encounter' based on current M vs selected encounter M."""
@@ -1051,7 +1088,7 @@ class ScalarPlotPanel(wx.Panel):
 
     def _nudge_time_minutes(self, dmin: int):
         """
-        Shift the displayed time relative to closest approach by Δt (minutes).
+        Shift the currently displayed orbital position by Δt minutes.
         Converts Δt → ΔM using mean motion, then snaps slider to nearest sample.
         """
 
@@ -1060,71 +1097,74 @@ class ScalarPlotPanel(wx.Panel):
 
         try:
             enc_id = getattr(self, "_selected_encounter_id", None)
-            meta   = getattr(self, "_enc_meta_by_id", {}).get(enc_id, {}) if enc_id else {}
+            meta = getattr(self, "_enc_meta_by_id", {}).get(enc_id, {}) if enc_id else {}
 
-            M_ca = meta.get("M_ca_deg")
-            P_h  = meta.get("period_hours")
+            # ---- Orbital period fallback chain ----
+            P_h = meta.get("period_hours")
 
-            # Fallbacks
             if P_h is None or not (isinstance(P_h, (int, float)) and P_h > 0):
                 P_h = (
-                    getattr(self, "period_hours", None) or
-                    getattr(self, "default_period_hours", None) or
-                    85.228  # Europa default
+                    getattr(self, "period_hours", None)
+                    or getattr(self, "default_period_hours", None)
+                    or 85.228  # Europa default
                 )
 
-            if M_ca is None:
-                # Last-known selection value if present
-                M_ca = getattr(self, "_selected_encounter_M_deg", None)
-
-            if M_ca is None:
-                # As a last resort, try to derive from currently shown ν (if the widget exists)
-                try:
-                    e = float(self._get_eccentricity()) if hasattr(self, "_get_eccentricity") else 0.0
-                except Exception:
-                    e = 0.0
-                try:
-                    from .utils import true_to_mean_anomaly_deg as _true2mean
-                    nu_now = None
-                    if hasattr(self, "txt_nu") and self.txt_nu:
-                        try:
-                            nu_now = float(self.txt_nu.GetValue())
-                        except Exception:
-                            nu_now = None
-                    if nu_now is not None:
-                        M_ca = float(_true2mean(nu_now, e)) % 360.0
-                except Exception:
-                    M_ca = None
-
-            # If we still don't have what we need, warn & bail
-            if M_ca is None or P_h is None or not (P_h > 0):
-                import wx
-                wx.LogWarning(
-                    f"Time nudge unavailable: missing M_ca ({M_ca}) or period_hours ({P_h}) for this encounter."
-                )
-                _dbg("enc=%r M_ca=%r P_h=%r -> cannot nudge (dmin=%r)", enc_id, M_ca, P_h, dmin)
+            if P_h is None or not (float(P_h) > 0):
+                wx.LogWarning(f"Time nudge unavailable: bad period_hours={P_h}")
                 return
 
-            # Mean motion (deg/min) and new mean anomaly
-            n_deg_per_min = 360.0 / (float(P_h) * 60.0)
-            M_new = (float(M_ca) + n_deg_per_min * float(dmin)) % 360.0
+            # ---- Get current displayed M from slider/index/nu grid ----
+            M_now = None
 
-            # Persist the updated M for the current encounter
             try:
-                if enc_id:
-                    md = getattr(self, "_enc_meta_by_id", {}).get(enc_id)
-                    if isinstance(md, dict):
-                        md["M_ca_deg"] = float(M_new)
-                self._selected_encounter_M_deg = float(M_new)
+                idx = int(self.sld_orbit.GetValue())
+                if hasattr(self, "_nus") and self._nus:
+                    idx = max(0, min(idx, len(self._nus) - 1))
+                    nu_now = float(self._nus[idx])
+
+                    e = self._ecc_safe() if hasattr(self, "_ecc_safe") else 0.0
+                    M_now = float(_true_to_mean_anomaly_deg(nu_now, e)) % 360.0
+            except Exception:
+                M_now = None
+
+            # Fallback: selected encounter M
+            if M_now is None:
+                M_now = getattr(self, "_selected_encounter_M_deg", None)
+
+            # Fallback: encounter closest-approach M
+            if M_now is None:
+                M_now = meta.get("M_ca_deg")
+
+            if M_now is None:
+                wx.LogWarning(
+                    f"Time nudge unavailable: could not determine current M for encounter {enc_id}."
+                )
+                _dbg("enc=%r M_now=%r P_h=%r -> cannot nudge dmin=%r", enc_id, M_now, P_h, dmin)
+                return
+
+            # ---- Convert time offset to mean anomaly offset ----
+            n_deg_per_min = 360.0 / (float(P_h) * 60.0)
+            M_new = (float(M_now) + n_deg_per_min * float(dmin)) % 360.0
+
+            _dbg(
+                "enc=%s M_now=%.6f P_h=%.6f dmin=%+d -> M_new=%.6f",
+                enc_id,
+                float(M_now),
+                float(P_h),
+                int(dmin),
+                float(M_new),
+            )
+
+            # ---- Snap slider and redraw ----
+            k = int(self._closest_index_for_M(M_new))
+
+            try:
+                self.sld_orbit.SetValue(k)
             except Exception:
                 pass
 
-            _dbg("enc=%s M_ca=%.6f P_h=%.6f dmin=%+d → M_new=%.6f (n=%.6f deg/min)",
-                enc_id, float(M_ca), float(P_h), int(dmin), float(M_new), float(n_deg_per_min))
+            self._selected_encounter_M_deg = float(M_new)
 
-            # Snap slider to nearest sample and trigger the usual pipeline
-            k = self._closest_index_for_M(M_new)
-            self.sld_orbit.SetValue(int(k))
             self._on_slide(None)
 
         except Exception:
@@ -2259,6 +2299,7 @@ class ScalarPlotPanel(wx.Panel):
         """
         Compute (Ttt,Tpt,Tpp) for the current M and trigger a redraw.
         """
+        self._update_satellite_label()
         if self._nus is None or self._eval_fn is None or self._lats is None or self._lons is None:
             return
 
@@ -2491,15 +2532,14 @@ class ScalarPlotPanel(wx.Panel):
     # --- vector magnitude → drawn half-length (in degrees of lon) ---
     def _len_from_kpa(self, kpa: float) -> float:
         try:
-            ref = float(getattr(self, "_vec_ref_kpa", 100.0))
+            ref = float(getattr(self, "_vec_scale_ref_kpa", 100.0))
             vmax_half = float(getattr(self, "_vec_max_deg", 10.0))
             if ref <= 0:
                 ref = 100.0
-            L = vmax_half * min(abs(float(kpa)) / ref, 1.0)
-            return float(L)
+            return float(vmax_half * min(abs(float(kpa)) / ref, 1.0))
         except Exception:
             return float(getattr(self, "_vec_max_deg", 10.0))
-
+            
     def _ensure_scale_ax(self):
         pos = self.ax.get_position()
         fig_w_in, fig_h_in = self.fig.get_size_inches()
@@ -2837,18 +2877,20 @@ class ScalarPlotPanel(wx.Panel):
     def _M_for_encounter(self, enc_or_id) -> Optional[float]:
         """
         Returns MEAN anomaly M (deg).
+
         Priority:
         1) Stored M in encounter dict
-        2) Resolve ν (true anomaly) via stored ν or self._nu_resolver(utc_iso)
-        3) Convert ν -> M using current eccentricity
-        Persists resolved ν and computed M back onto the encounter dict.
+        2) Manual/current Point panel UTC match -> use Point panel M textbox
+        3) Resolve ν from encounter
+        4) Convert ν -> M using current eccentricity
         """
         enc = enc_or_id if isinstance(enc_or_id, dict) else self._enc_by_id(enc_or_id)
         if not enc:
             return None
 
-        #plume cache (only if you actually have stable keys)
-        # If you key only by encounter_id, replace the tuple logic accordingly.
+        print("[_M_for_encounter] enc =", enc)
+
+        # Plume cache
         try:
             if enc.get("encounter_tag") == "plume":
                 enc_id = enc.get("encounter_id") or enc.get("id")
@@ -2863,23 +2905,76 @@ class ScalarPlotPanel(wx.Panel):
         except Exception:
             pass
 
-
-        #Prefer stored M
-        for k in ("mean_anom_deg", "M_deg"):
+        # 1) Prefer stored M
+        for k in ("mean_anom_deg", "M_deg", "M", "mean_anomaly", "mean_anom"):
             v = enc.get(k)
+            print(f"[_M_for_encounter] stored {k} =", v)
             if v is not None:
                 try:
                     M = float(v) % 360.0
                     if np.isfinite(M):
-                        # normalize storage
                         enc["mean_anom_deg"] = M
                         enc["M_deg"] = M
                         return M
                 except Exception:
                     pass
 
-        #Resolve ν using existing helper 
+        # 2) Manual UTC fallback: use already-computed Point panel M
+        try:
+            pp = getattr(self, "point_panel", None)
+
+            # Walk upward through parents
+            parent = self
+            while pp is None and parent is not None:
+                pp = getattr(parent, "point_panel", None)
+                parent = parent.GetParent() if hasattr(parent, "GetParent") else None
+
+            # Also check top-level frame
+            if pp is None:
+                top = wx.GetTopLevelParent(self)
+                pp = getattr(top, "point_panel", None)
+
+            print("[_M_for_encounter] point_panel =", pp)
+
+            if pp is not None:
+                manual_utc = ""
+                if hasattr(pp, "txt_utc"):
+                    manual_utc = pp.txt_utc.GetValue().strip()
+                elif hasattr(pp, "txt_datetime"):
+                    manual_utc = pp.txt_datetime.GetValue().strip()
+
+                row_utc = str(
+                    enc.get("utc_iso")
+                    or enc.get("utc")
+                    or enc.get("id")
+                    or enc.get("name")
+                    or enc.get("label")
+                    or ""
+                ).strip()
+
+                print(
+                    "[_M_for_encounter] manual fallback:",
+                    "manual_utc=", manual_utc,
+                    "row_utc=", row_utc,
+                    "has_txt_M=", hasattr(pp, "txt_M"),
+                )
+
+                if manual_utc and row_utc == manual_utc and hasattr(pp, "txt_M"):
+                    M = float(pp.txt_M.GetValue().strip()) % 360.0
+                    if np.isfinite(M):
+                        enc["mean_anom_deg"] = M
+                        enc["M_deg"] = M
+                        enc["utc_iso"] = manual_utc
+                        enc["phase_src"] = enc.get("phase_src") or "point-panel:M"
+                        return M
+
+        except Exception as err:
+            print("[_M_for_encounter] point-panel M fallback failed:", repr(err))
+
+        # 3) Resolve ν using existing helper
         nu = self._nu_for_encounter(enc)
+        print("[_M_for_encounter] resolved nu =", nu)
+
         if nu is None:
             return None
 
@@ -2888,11 +2983,10 @@ class ScalarPlotPanel(wx.Panel):
         except Exception:
             return None
 
-        # Persist ν for future calls
         enc["nu_deg"] = nu
         enc["true_anom_deg"] = nu
 
-        #Convert ν -> M
+        # 4) Convert ν -> M
         try:
             M = float(_true_to_mean_anomaly_deg(nu, self._ecc_safe())) % 360.0
         except Exception:
@@ -2901,10 +2995,9 @@ class ScalarPlotPanel(wx.Panel):
         if not np.isfinite(M):
             return None
 
-        # Persist M
         enc["mean_anom_deg"] = M
         enc["M_deg"] = M
-        enc["phase_src"] = enc.get("phase_src") or ("horizons:nu->M" if callable(getattr(self, "_nu_resolver", None)) else "nu->M")
+        enc["phase_src"] = enc.get("phase_src") or "nu->M"
 
         try:
             if enc.get("encounter_tag") == "plume":
@@ -2914,7 +3007,6 @@ class ScalarPlotPanel(wx.Panel):
                     cache[str(enc_id)] = float(M)
         except Exception:
             pass
-
 
         return M
 
@@ -3293,11 +3385,20 @@ class ScalarPlotPanel(wx.Panel):
             encs.append({
                 "id": eid,
                 "name": name,
+
+                # true anomaly
                 "nu_deg": rec.get("nu_deg") or rec.get("true_anom_deg"),
+                "true_anom_deg": rec.get("true_anom_deg") or rec.get("nu_deg"),
+
+                # mean anomaly -- this is what was missing
+                "mean_anom_deg": rec.get("mean_anom_deg") or rec.get("M_deg"),
+                "M_deg": rec.get("M_deg") or rec.get("mean_anom_deg"),
+
+                # metadata
                 "utc_iso": rec.get("utc_iso") or rec.get("utc"),
                 "lat_deg": rec.get("lat_deg") or rec.get("lat"),
                 "lon_deg": rec.get("lon_deg") or rec.get("lon"),
-                # if your control panel stored mean_anom_deg, Point panel can display it; we resolve M here anyway
+                "phase_src": rec.get("phase_src"),
             })
         self.set_encounters(encs, select_id=select_id)
 
@@ -3455,11 +3556,6 @@ def get_or_create_scalar_popup(
 ) -> "ScalarPlotPanel":
     """
     Build the ScalarPlotPanel inside the Stress Plot tab instead of a popup.
-
-    Requires AnalysisControlPanel to have:
-        self.plot_tab
-        self.notebook
-    assigned from StressVizFrame.
     """
 
     def _maybe(chain: Tuple[str, ...]):
@@ -3470,38 +3566,68 @@ def get_or_create_scalar_popup(
                 return None
         return obj if callable(obj) else None
 
+    def _find_attr_up(obj, attr):
+        """
+        Walk upward through wx parents looking for an attribute.
+        Useful because satellite_panel may live on the frame, not the control panel.
+        """
+        cur = obj
+        while cur is not None:
+            val = getattr(cur, attr, None)
+            if val is not None:
+                return val
+            cur = cur.GetParent() if hasattr(cur, "GetParent") else None
+        return None
+
+    sat_panel = _find_attr_up(parent, "satellite_panel")
+    point_panel = _find_attr_up(parent, "point_panel")
+
     if get_system_id is None:
         get_system_id = (
             _maybe(("get_system_id",))
-            or _maybe(("global_params_panel", "get_system_id"))
+            or _maybe(("satellite_panel", "get_system_id"))
+            or (getattr(sat_panel, "get_system_id", None) if sat_panel is not None else None)
         )
 
     if get_encounter_id is None:
         get_encounter_id = (
             _maybe(("get_selected_encounter_id",))
             or _maybe(("point_panel", "get_selected_encounter_id"))
+            or (getattr(point_panel, "get_selected_encounter_id", None) if point_panel is not None else None)
         )
 
     get_eccentricity = (
         _maybe(("get_eccentricity",))
-        or _maybe(("global_params_panel", "get_eccentricity"))
+        or _maybe(("satellite_panel", "get_eccentricity"))
+        or (getattr(sat_panel, "get_eccentricity", None) if sat_panel is not None else None)
     )
 
-    # ---------- use notebook tab instead of popup frame ----------
+    try:
+        print("[get_or_create_scalar_popup] sat_panel =", sat_panel)
+        print("[get_or_create_scalar_popup] get_system_id =", get_system_id)
+        print("[get_or_create_scalar_popup] system_id =", get_system_id() if callable(get_system_id) else None)
+        print("[get_or_create_scalar_popup] get_eccentricity =", get_eccentricity)
+        print("[get_or_create_scalar_popup] eccentricity =", get_eccentricity() if callable(get_eccentricity) else None)
+    except Exception as err:
+        print("[get_or_create_scalar_popup] debug failed:", repr(err))
+
     host = getattr(parent, "plot_tab", None)
     if host is None:
         raise RuntimeError("AnalysisControlPanel.plot_tab is not connected.")
 
-    # Clear old contents from the Stress Plot tab
     for child in host.GetChildren():
         child.Destroy()
 
     panel = ScalarPlotPanel(
         host,
-        get_system_id=get_system_id,
+        get_system_id=(get_system_id or (lambda: "JupiterEuropa")),
         get_encounter_id=get_encounter_id,
         get_eccentricity=(get_eccentricity or (lambda: 0.0)),
     )
+
+    panel._update_satellite_label()
+
+    print("[get_or_create_scalar_popup] panel created:", panel)
 
     sizer = wx.BoxSizer(wx.VERTICAL)
     sizer.Add(panel, 1, wx.EXPAND)
@@ -3521,7 +3647,6 @@ def get_or_create_scalar_popup(
     except Exception:
         pass
 
-    # Switch to Stress Plot tab
     try:
         notebook = getattr(parent, "notebook", None)
         if notebook is not None:
@@ -3530,9 +3655,8 @@ def get_or_create_scalar_popup(
         pass
 
     def _deferred_init():
-        # Hook orbit "goto" function
         try:
-            orbit = getattr(parent, "orbit_panel", None)
+            orbit = getattr(parent, "orbit_panel", None) or _find_attr_up(parent, "orbit_panel")
             if orbit is not None:
                 goto = (
                     getattr(orbit, "highlight_active", None)
@@ -3546,7 +3670,6 @@ def get_or_create_scalar_popup(
         except Exception:
             pass
 
-        # True anomaly resolver from parent/control panel
         try:
             resolver = getattr(parent, "_resolve_true_anomaly", None)
             if callable(resolver):
@@ -3555,15 +3678,16 @@ def get_or_create_scalar_popup(
                 cp = (
                     getattr(parent, "control_panel", None)
                     or getattr(parent, "analysis_control_panel", None)
+                    or _find_attr_up(parent, "control_panel")
+                    or _find_attr_up(parent, "analysis_control_panel")
                 )
                 if cp is not None:
-                    cand = getattr(cp, "_", None)
+                    cand = getattr(cp, "_resolve_true_anomaly", None)
                     if callable(cand):
                         panel._nu_resolver = cand
         except Exception:
             pass
 
-        # Populate encounters and sync selection
         try:
             enc_map: Dict[str, Dict[str, Any]] = getattr(parent, "encounters_by_id", {}) or {}
             ids: List[str] = sorted(enc_map.keys(), key=lambda x: str(x))
@@ -3572,7 +3696,9 @@ def get_or_create_scalar_popup(
             get_sel = (
                 _maybe(("get_selected_encounter_id",))
                 or _maybe(("point_panel", "get_selected_encounter_id"))
+                or (getattr(point_panel, "get_selected_encounter_id", None) if point_panel is not None else None)
             )
+
             if callable(get_sel):
                 try:
                     current_sel = get_sel()
@@ -3593,39 +3719,40 @@ def get_or_create_scalar_popup(
                 encs: List[Dict[str, Any]] = []
                 for eid in ids:
                     rec = enc_map.get(eid, {}) or {}
+                    print("[build scalar enc] eid=", eid, "rec=", rec)
+
                     encs.append({
                         "id": eid,
                         "name": str(eid),
                         "nu_deg": rec.get("nu_deg") or rec.get("true_anom_deg"),
+                        "true_anom_deg": rec.get("true_anom_deg") or rec.get("nu_deg"),
+                        "mean_anom_deg": rec.get("mean_anom_deg") or rec.get("M_deg"),
+                        "M_deg": rec.get("M_deg") or rec.get("mean_anom_deg"),
                         "utc_iso": rec.get("utc_iso") or rec.get("utc"),
                         "lat_deg": rec.get("lat_deg") or rec.get("lat"),
                         "lon_deg": rec.get("lon_deg") or rec.get("lon"),
+                        "phase_src": rec.get("phase_src"),
                     })
 
-                try:
-                    panel._encounters = encs
-                    if hasattr(panel, "_refresh_encounter_choices"):
-                        panel._refresh_encounter_choices()
-                    if current_sel and hasattr(panel, "cmb_enc"):
-                        try:
-                            idx = next(
-                                i for i, e in enumerate(encs)
-                                if e.get("id") == current_sel
-                            )
-                            panel.cmb_enc.SetSelection(idx)
-                        except StopIteration:
-                            pass
-                except Exception:
-                    pass
+                panel._encounters = encs
+                if hasattr(panel, "_refresh_encounter_choices"):
+                    panel._refresh_encounter_choices()
+
+                if current_sel and hasattr(panel, "cmb_enc"):
+                    try:
+                        idx = next(i for i, e in enumerate(encs) if e.get("id") == current_sel)
+                        panel.cmb_enc.SetSelection(idx)
+                    except StopIteration:
+                        pass
         except Exception:
             pass
 
-        # Snap initial position to selected encounter's exact M
         try:
             sel_id = None
             get_sel = (
                 _maybe(("get_selected_encounter_id",))
                 or _maybe(("point_panel", "get_selected_encounter_id"))
+                or (getattr(point_panel, "get_selected_encounter_id", None) if point_panel is not None else None)
             )
 
             if callable(get_sel):
@@ -3656,15 +3783,16 @@ def get_or_create_scalar_popup(
                             wx.CallLater(50, _inject_and_snap)
                             return
 
+                        M0_mod = float(M0) % 360.0
                         e = panel._ecc_safe()
-                        nu0 = _mean_to_true_anomaly_deg(M0, e)
+                        nu0 = float(_mean_to_true_anomaly_deg(M0_mod, e))
 
                         Ms = [
                             float(_true_to_mean_anomaly_deg(nu, e)) % 360.0
                             for nu in panel._nus
                         ]
                         diffs = [
-                            abs(((m - M0) + 180.0) % 360.0 - 180.0)
+                            abs(((m - M0_mod) + 180.0) % 360.0 - 180.0)
                             for m in Ms
                         ]
                         k = int(np.argmin(diffs))
@@ -3672,33 +3800,54 @@ def get_or_create_scalar_popup(
                         if diffs[k] <= (360.0 / max(1, len(panel._nus))) * 0.25:
                             panel._idx = k
                             try:
+                                panel.sld_orbit.SetRange(0, max(0, len(panel._nus) - 1))
                                 panel.sld_orbit.SetValue(k)
                             except Exception:
                                 pass
+
                             panel._evaluate_and_plot()
-                            panel._startup_target_M = float(M0)
+                            panel._startup_target_M = M0_mod
                             panel._init_snap_done = True
                             return
 
-                        panel._nus = [float(nu0)] + list(panel._nus)
-                        panel._idx = 0
+                        pairs = [
+                            (
+                                float(_true_to_mean_anomaly_deg(nu, e)) % 360.0,
+                                float(nu),
+                            )
+                            for nu in panel._nus
+                        ]
+
+                        pairs.append((M0_mod, nu0))
+                        pairs.sort(key=lambda p: p[0])
+
+                        panel._nus = [nu for _m, nu in pairs]
+
+                        k = min(
+                            range(len(pairs)),
+                            key=lambda i: abs(
+                                ((pairs[i][0] - M0_mod) + 180.0) % 360.0 - 180.0
+                            ),
+                        )
+
+                        panel._idx = k
 
                         try:
                             panel.sld_orbit.SetRange(0, max(0, len(panel._nus) - 1))
-                            panel.sld_orbit.SetValue(0)
+                            panel.sld_orbit.SetValue(k)
                         except Exception:
                             pass
 
                         panel._evaluate_and_plot()
-                        panel._startup_target_M = float(M0)
+                        panel._startup_target_M = M0_mod
                         panel._init_snap_done = True
 
-                    except Exception:
-                        pass
+                    except Exception as err:
+                        print("[get_or_create_scalar_popup] _inject_and_snap failed:", repr(err))
 
                 _inject_and_snap()
-        except Exception:
-            pass
+        except Exception as err:
+            print("[get_or_create_scalar_popup] initial snap failed:", repr(err))
 
     wx.CallLater(1, _deferred_init)
 

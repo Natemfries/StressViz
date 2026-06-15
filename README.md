@@ -45,7 +45,6 @@ python main.py
 #Known Issues
 - Conda may attempt to use the default Anaconda channel and hit rate limits. Ensure `conda-forge` is used with strict priority.
 - wxPython installation may fail outside of Conda environments.
-- "Load from file" button to input satellite parameters doesn't work. Bypass this with the "Europa Preset" button or input parameters manually.
 - Colorbar range for stress plots doesn't update when bounds are changed.
 
 
@@ -58,7 +57,8 @@ python main.py
     - HST 2012-12-30T18:49:00Z - Initially reported as a positive detection according to Roth et al. (2014), but has been updated to a negative detection in Roth et al., (2026).
     - HST 2014-01-26T18:05:00Z HST 2014-03-17T11:47:00Z, HST 2014-04-04T05:20:00Z, and HST 2016-02-22T00:00:00Z - All reported as positive detections in Sparks et al. (2016,2017), but were subsequently refuted by Giono et al., (2020).
     - Keck 2016-04-26T05:32:00Z - Reported as a positive detection in Paganini et al., (2019).
-    - Galileo 1997-12-16T12:00:59Z - Reported as a positive detection in Jia et al., (2018).
+    - Galileo 1997-12-16T12:00:59Z - Reported as a positive detection in Jia et al., (2018) and then refuted by Paterson and Collinosn (2026).
+    - Galileo 2000-01-03T17:49:53Z - Reported as negative by Jia et al., (2018), then positive by Arnold et al., (2019) and Huybrighs et al., (2020).
     - Subaru 2021-07-17T10:21:00Z - Reported as a positive detection in Kimura et al., (2024).
 
     Events can be selected from the internal database, as well as manually entered (see Point Panel). Selected events are shown in the panel. The color markers are generated randomly and are customizable.
@@ -82,7 +82,7 @@ python main.py
 
 #Controls Tab
     #Satellite Panel:
-    Loads parameters for Europa by default (can be found in /data/EuropaSample.sat). The user can input alternate parameters manually. EuropaSample.sat is duplicated from the satellite file in SatStressGUI V5.0.
+    Loads parameters for Europa by default (can be found in /data/EuropaSample.sat). The user can also load other compatible .sat files using the "Load from file" button or input alternate parameters manually. EuropaSample.sat and EnceladusSample.sat are duplicated from the satellite file in SatStressGUI V5.0.
 
     #Love Number Panel:
     Compute love numbers based on the satellite parameters. This computation is runs SatStress and more information about this computation can be found in the SatStress documentation (https://github.com/SatStressGUI/SatStressGUI).

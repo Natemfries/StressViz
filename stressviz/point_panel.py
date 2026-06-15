@@ -7,7 +7,7 @@ from astropy.time import Time
 from typing import Optional, Callable, Iterable, Union
 from .ui_style import instr_label, style_staticbox, apply_font
 from .utils import true_to_mean_anomaly_deg  
-from .horizons_phase import europa_phase_from_horizons
+from .horizons_phase import orbital_phase_from_horizons
 
 __all__ = ["PointStressPanel"]
 
@@ -386,20 +386,50 @@ class PointStressPanel(wx.Panel):
     # ---------- ν resolver ----------
     def autofill_phase_from_time(self, evt=None, *, prefer_horizons_M: bool = False) -> None:
         """
-        Read UTC ISO from UI, query Horizons for Europa ν (about Jupiter), compute M, update UI.
+        Read UTC ISO from UI, query Horizons for the currently loaded satellite/planet
+        system, compute M, and update UI.
+
+        Uses SYSTEM_ID values like:
+        JupiterEuropa
+        SaturnEnceladus
         """
+
+        print(
+            "[DEBUG] SYSTEM_ID =",
+            getattr(self.get_satellite, "satParams", {}).get("SYSTEM_ID")
+        )
         utc_iso = self.txt_utc.GetValue().strip()
         if not utc_iso:
-            wx.MessageBox("Enter a UTC ISO time first (e.g., 2026-02-18T12:00:00Z).",
-                          "Missing time", wx.OK | wx.ICON_WARNING)
+            wx.MessageBox(
+                "Enter a UTC ISO time first (e.g., 2026-02-18T12:00:00Z).",
+                "Missing time",
+                wx.OK | wx.ICON_WARNING,
+            )
             return
 
         try:
-            phase = europa_phase_from_horizons(
+            # Resolve loaded SatStress SYSTEM_ID -> Horizons target/center
+            target, center = self._horizons_body_from_system_id()
+
+            # Best-effort debug: print the raw SYSTEM_ID too
+            system_id = ""
+            if hasattr(self, "parameters"):
+                system_id = str(self.parameters.get("SYSTEM_ID", "")).strip()
+            if not system_id and hasattr(self, "satellite"):
+                params = getattr(self.satellite, "satParams", {})
+                system_id = str(params.get("SYSTEM_ID", "")).strip()
+
+            print(
+                f"[StressViz/autofill_phase_from_time] "
+                f"SYSTEM_ID={system_id!r} -> target={target!r}, center={center!r}, utc={utc_iso!r}"
+            )
+
+            phase = orbital_phase_from_horizons(
                 utc_iso,
-                center="JUPITER",                # uses 500@599
+                target=target,
+                center=center,
                 prefer_M_from_horizons=prefer_horizons_M,
-                debug_payload=False,
+                debug_payload=True,
             )
 
             nu_deg = float(phase.nu_deg) % 360.0
@@ -407,35 +437,67 @@ class PointStressPanel(wx.Panel):
 
             if prefer_horizons_M and (phase.M_deg is not None) and np.isfinite(phase.M_deg):
                 M_deg = float(phase.M_deg) % 360.0
-                src = "horizons:M"
+                src = f"horizons:{target}:M"
             else:
                 M_deg = float(true_to_mean_anomaly_deg(nu_deg, e)) % 360.0
-                src = "horizons:nu->M"
+                src = f"horizons:{target}:nu->M"
 
-            # Update UI fields (format however you like)
+            print(
+                f"[StressViz/autofill_phase_from_time] "
+                f"result target={target!r}, center={center!r}, "
+                f"nu={nu_deg:.6f}, e={e:.8g}, M={M_deg:.6f}, src={src}"
+            )
+
             self.txt_nu.SetValue(f"{nu_deg:.1f}")
             self.txt_M.SetValue(f"{M_deg:.1f}")
-            #self.e_ctrl.SetValue(f"{e:.12g}")
+
             if hasattr(self, "phase_src_ctrl"):
                 self.phase_src_ctrl.SetValue(src)
 
-            # Optional: stash in panel state for downstream computation
             self.current_phase = dict(
                 utc_iso=phase.utc_iso,
+                system_id=system_id,
+                target=target,
+                center=center,
                 nu_deg=nu_deg,
                 M_deg=M_deg,
                 e=e,
                 src=src,
             )
 
-            # Optional: notify parent to re-render plots / recompute stresses
             evt = wx.CommandEvent(wx.EVT_TEXT.typeId, self.GetId())
             wx.PostEvent(self, evt)
 
         except Exception as err:
-            wx.MessageBox(f"Horizons query failed:\n\n{err!r}",
-                          "Horizons error", wx.OK | wx.ICON_ERROR)
+            wx.MessageBox(
+                f"Horizons query failed:\n\n{err!r}",
+                "Horizons error",
+                wx.OK | wx.ICON_ERROR,
+            )
       
+    def _horizons_body_from_system_id(self):
+        print("has get_satellite?", hasattr(self, "get_satellite"))
+        sat = self.get_satellite() if hasattr(self, "get_satellite") else None
+        params = getattr(sat, "satParams", {}) if sat is not None else {}
+        system_id = str(params.get("SYSTEM_ID", "")).strip()
+
+        print(f"[StressViz/_horizons_body_from_system_id] SYSTEM_ID={system_id!r}")
+
+        known = {
+            "JupiterEuropa": ("EUROPA", "JUPITER"),
+            "SaturnEnceladus": ("ENCELADUS", "SATURN"),
+            "JupiterGanymede": ("GANYMEDE", "JUPITER"),
+        }
+
+        if system_id in known:
+            return known[system_id]
+
+        if not system_id:
+            print("[StressViz/_horizons_body_from_system_id] No SYSTEM_ID found; defaulting to Europa/Jupiter")
+            return "EUROPA", "JUPITER"
+
+        raise ValueError(f"Unsupported SYSTEM_ID: {system_id!r}")
+
     '''       
     def _on_resolve_nu(self, _evt):
         sval_et  = (self.txt_et.GetValue()  or "").strip()

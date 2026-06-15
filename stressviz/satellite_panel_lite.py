@@ -261,7 +261,7 @@ class SatellitePanelLite(wx.Panel):
         top_row = wx.BoxSizer(wx.HORIZONTAL)
         self.btn_load_file = wx.Button(self, label=u"Load from file")
         self.btn_save_file = wx.Button(self, label=u"Save to file")
-        self.btn_load_file.Enable(False) #disabled for now, method is broken
+        self.btn_load_file.Enable(True) #disabled for now, method is broken
         self.btn_save_file.Enable(False)  # present but disabled for now
         top_row.Add(self.btn_load_file, 1, wx.ALL | wx.EXPAND, 3)
         top_row.Add(self.btn_save_file, 1, wx.ALL | wx.EXPAND, 3)
@@ -389,16 +389,22 @@ class SatellitePanelLite(wx.Panel):
         ) as dlg:
             if dlg.ShowModal() != wx.ID_OK:
                 return
+
             path = dlg.GetPath()
             self.last_loaded_path = path
 
         try:
             sat = load_satellite_from_file(path)
+
             self.satellite = sat
+            self.parameters = dict(getattr(sat, "satParams", {}))
+
             self._mirror_satellite_into_form(sat)
             self._notify()
+
         except SatFileLoadError as e:
             wx.MessageBox(str(e), "SatStress import error", wx.OK | wx.ICON_ERROR)
+
         except Exception as e:
             wx.MessageBox(f"Failed to load .sat:\n{e}", "Parse error", wx.OK | wx.ICON_ERROR)
 
@@ -549,7 +555,12 @@ class SatellitePanelLite(wx.Panel):
 
         Also supports object-style sat["layers"] if present.
         """
+
         import re
+
+        # SatStress Satellite objects store the actual .sat values here
+        if hasattr(sat, "satParams"):
+            sat = sat.satParams
 
         PROPS = ("rho", "E", "nu", "H", "eta")
         SEC_PER_YEAR = 365.25 * 86400.0

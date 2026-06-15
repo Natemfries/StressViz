@@ -1,4 +1,4 @@
-# stressviz/ephemeris/horizons_phase.py
+# stressviz/horizons_phase.py
 """
 Horizons-backed ephemeris helpers for StressViz.
 
@@ -33,12 +33,14 @@ from astroquery.jplhorizons import Horizons
 # ---------- public dataclass ----------
 
 @dataclass(frozen=True)
-class EuropaPhase:
-    utc_iso: str          # normalized-ish UTC string (whatever you passed in)
-    nu_deg: float         # true anomaly in degrees, wrapped to [0, 360)
-    e: float              # eccentricity
-    M_deg: Optional[float] = None  # mean anomaly in degrees, wrapped to [0, 360) if present
-    colnames: Optional[str] = None # debug: comma-separated Horizons element columns
+class BodyPhase:
+    utc_iso: str
+    target: str
+    center: str
+    nu_deg: float
+    e: float
+    M_deg: Optional[float] = None
+    colnames: Optional[str] = None
 
     @property
     def nu_rad(self) -> float:
@@ -49,6 +51,46 @@ class EuropaPhase:
         if self.M_deg is None:
             return None
         return float(np.deg2rad(self.M_deg) % (2.0 * np.pi))
+
+
+# Backward-compatible alias
+EuropaPhase = BodyPhase
+
+
+HORIZONS_BODY_IDS = {
+    "EUROPA": "502",
+    "GANYMEDE": "503",
+    "ENCELADUS": "602",
+}
+
+
+HORIZONS_CENTER_IDS = {
+    "JUPITER": "599",
+    "SATURN": "699",
+}
+
+
+def _horizons_id_for_target(target: str) -> str:
+    t = str(target).strip().upper()
+    return HORIZONS_BODY_IDS.get(t, t)
+
+
+def _location_for_center(center: str) -> str:
+    c = center.strip().upper()
+
+    if c in {"JUPITER", "599"}:
+        return "500@599"
+
+    if c in {"SATURN", "699"}:
+        return "500@699"
+
+    if c in {"JSB", "JUPITER_BARYCENTER", "BARYCENTER", "5"}:
+        return "500@5"
+
+    raise ValueError(
+        f"Unknown center={center!r}. "
+        "Use 'JUPITER' (599), 'SATURN' (699), or 'JSB' (5)."
+    )
 
 
 # ---------- internal helpers ----------
@@ -82,57 +124,33 @@ def _pick_float(row, cols, *names) -> Optional[float]:
     return None
 
 
-def _location_for_center(center: str) -> str:
-    """
-    center:
-      - "JUPITER": Europa osculating elements relative to Jupiter center (599)
-      - "JSB":     relative to Jupiter system barycenter (5)
-    """
-    c = center.strip().upper()
-    if c in {"JUPITER", "599"}:
-        return "500@599"
-    if c in {"JSB", "JUPITER_BARYCENTER", "BARYCENTER", "5"}:
-        return "500@5"
-    raise ValueError(f"Unknown center={center!r}. Use 'JUPITER' (599) or 'JSB' (5).")
-
-
 # ---------- public API (single epoch) ----------
 
 @lru_cache(maxsize=4096)
-def europa_phase_from_horizons(
+def orbital_phase_from_horizons(
     utc_iso: str,
     *,
+    target: str = "EUROPA",
     center: str = "JUPITER",
     prefer_M_from_horizons: bool = False,
     debug_payload: bool = False,
-) -> EuropaPhase:
+) -> BodyPhase:
     """
-    Return Europa's true anomaly (nu) about Jupiter at a given UTC time.
+    Return target body's true anomaly about the requested center at a UTC time.
 
-    Parameters
-    ----------
-    utc_iso:
-        UTC ISO-ish time string, e.g. "2026-02-18T12:00:00Z"
-    center:
-        "JUPITER" -> location="500@599" (recommended)
-        "JSB"     -> location="500@5"
-    prefer_M_from_horizons:
-        If True and Horizons returns mean anomaly M, include it in the result.
-        Otherwise M_deg will be None.
-    debug_payload:
-        If True, prints the query payload Horizons would send.
-
-    Returns
-    -------
-    EuropaPhase with nu_deg, e, and optionally M_deg.
+    Examples
+    --------
+    target="EUROPA", center="JUPITER"       -> id="502", location="500@599"
+    target="ENCELADUS", center="SATURN"    -> id="602", location="500@699"
     """
     utc_norm, jd_tdb = _utc_to_jd_tdb_scalar(utc_iso)
     location = _location_for_center(center)
+    target_id = _horizons_id_for_target(target)
 
     obj = Horizons(
-        id="502",          # Europa
+        id=target_id,
         location=location,
-        epochs=jd_tdb,     # scalar JD(TDB)
+        epochs=jd_tdb,
         id_type=None,
     )
 
@@ -152,14 +170,16 @@ def europa_phase_from_horizons(
         raise RuntimeError(f"Missing nu/e from Horizons. Columns={','.join(el.colnames)}")
 
     nu_deg = float(nu) % 360.0
-    e_val  = float(e)
+    e_val = float(e)
 
     M_deg: Optional[float] = None
     if prefer_M_from_horizons and (Mh is not None) and np.isfinite(Mh):
         M_deg = float(Mh) % 360.0
 
-    return EuropaPhase(
+    return BodyPhase(
         utc_iso=utc_norm,
+        target=str(target).strip().upper(),
+        center=str(center).strip().upper(),
         nu_deg=nu_deg,
         e=e_val,
         M_deg=M_deg,
